@@ -1,34 +1,6 @@
-" TagsBase for Vim: plugin to make a mini database of tags in the current file
-" this is then used to create a menu and to offer additional 'smart'
-" functionality like finding the name of the current function.
-" This is a megre of the TagsMenu.vim plugin from  Jay Dickon Glanville <jayglanville@home.com>
-" and the ctags.vim script from Alexey Marinichev <lyosha@lyosha.2y.net>
-" Last Modified: 1 Octobre 2001
-" Maintainer: Benoit Cerrina, <benoit.cerrina@writeme.com>
-" Location: http://benoitcerrina.dnsalias.org/vim/TagsBase.html.
-" Version: 0.7.1
-" See the accompaning documentation file for information on purpose,
-" installation, requirements and available options.
-" License: this is in the public domain.
-
-" prevent multiple loadings ...
-""if exists("loaded_TagsBase_perl")
-""	finish
-""endif
-let loaded_TagsBase_perl = 1
-
-" function to set a global variable if it is not already set
-function! s:TagsBaseSet(varname, varvalue)
-	if !exists(a:varname)
-		execute "let ". a:varname . " = '" . a:varvalue ."'"
-	endif
-endfunction
-
-
-perl << EOF
-package TagsBase;  
-# line 29 "perl/TagsBase.vim"
+package TagsBase;
 use diagnostics;
+use VIM;
 {
 	package TagsBase::Base;
 	##################################################
@@ -374,7 +346,7 @@ sub GetTagType
 {
 	my $line = shift;
 	my $elem = $Gbase->getTag($line);
-	VIM::DoCommand "let retVal = '". $elem->[2]."'";
+	VIM::DoCommand "let retVal = ". $elem->[2];
 	return $elem->Type;			#for debugging
 }
 
@@ -387,9 +359,12 @@ sub GetTagName
 {
 	my $line = shift;
 	my $elem = $Gbase->getTag($line);
-	VIM::DoCommand "let retVal = '" . $elem->[1]."'";
+	VIM::DoCommand "let retVal = " . $elem->[1];
 	return $elem->Name;			#for debugging
 }
 
 
-EOF
+BuildBase;
+my @blines = $Gbase->getBase;
+GetTagType( $blines[3][0] +1);
+GetTagName( $blines[3][0] + 10);

@@ -68,6 +68,7 @@ or in the command line.
 |g:TagsBase_CleanUp     |1                      |0=none 1=file in tmp 2=all    |
 |g:TagsBase_TitlePrefix |%t%( %M%)%( (%{expand("%:~:.:h")})%)%( %a%)%=         |
 |                       |                       | 'titlestring' prefix         |
+|g:TagsBase_MaxMenuSize |20                     | max number of items/menu     |
 |                       |                       |                              |
 |g:TagsBase_ctagsCommand|ctags --fields=Kn -o   |used to launch ctags          |
 |g:TagsBase_Pattern     |^\([^\t]\{-}\)\t[^\t]\{-}\t\(.\{-}\);"\t\([^\t]*\)\tline:\(\d*\).*$
@@ -115,8 +116,17 @@ a certain key)
 
 
 *TagsBase-ChangeLog*
+[17-Oct-2001] 0.8  (vim 6.0)  "Greatly improved the speed when perl is
+                                available.  Now almost everything happens in
+                                the perl interpreter.
+                                Speed improvement example: on a file with 5408
+                                tags: 645 second --> 72 second.
+                                Limited the number of menu items to
+                                configurable size both for time reasons and
+                                because gtk doesn't like menus which are
+                                longer than the screen"
 
-[07-Oct-2001] 0.7 (vim 6.0)    "Corrected some bugs regarding the situation
+[07-Oct-2001] 0.7.1 (vim 6.0)  "Corrected some bugs regarding the situation
                                 When perl is not builtin.
                                 Corrected a bug when there is only one tag in
                                 the file repeated tag generation would
