@@ -375,7 +375,7 @@ sub GetTagType
 	my $line = shift;
 	my $elem = $Gbase->getTag($line);
 	VIM::DoCommand "let retVal = '". $elem->[2]."'";
-	return $elem->Type;			#for debugging
+	return $elem->[2];			#for debugging
 }
 
 
@@ -388,7 +388,7 @@ sub GetTagName
 	my $line = shift;
 	my $elem = $Gbase->getTag($line);
 	VIM::DoCommand "let retVal = '" . $elem->[1]."'";
-	return $elem->Name;			#for debugging
+	return $elem->[1];			#for debugging
 }
 
 
