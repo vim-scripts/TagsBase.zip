@@ -6,7 +6,7 @@
 " Last Modified: 1 Octobre 2001
 " Maintainer: Benoit Cerrina, <benoit.cerrina@writeme.com>
 " Location: http://benoitcerrina.dnsalias.org/vim/TagsBase.html.
-" Version: 0.7
+" Version: 0.7.1
 " See the accompaning documentation file for information on purpose,
 " installation, requirements and available options.
 " License: this is in the public domain.
@@ -88,30 +88,7 @@ call s:TagsBaseSet('g:TagsBase_exprPar','\2')
 call s:TagsBaseSet('g:TagsBase_typePar','\3')
 call s:TagsBaseSet('g:TagsBase_linePar','\4')
 if has('perl')
-	call s:TagsBaseSet('g:TagsBase_Perl_pattern','^(?!!)([^\t]*)\t[^\t]*\t(.*);"\t([^\t]*)\tline:(\d*).*$')
-	call s:TagsBaseSet('g:TagsBase_Perl_namePar','$1')
-	call s:TagsBaseSet('g:TagsBase_Perl_exprPar','$2')
-	call s:TagsBaseSet('g:TagsBase_Perl_typePar','$3')
-	call s:TagsBaseSet('g:TagsBase_Perl_linePar','$4')
-	perl << EOF
-	$^W=1;
-	$TagsBase_Perl_pattern=VIM::Eval('g:TagsBase_Perl_pattern');
-	$TagsBase_Perl_typePar=VIM::Eval('g:TagsBase_Perl_typePar');
-	$TagsBase_Perl_namePar=VIM::Eval('g:TagsBase_Perl_namePar');
-	$TagsBase_Perl_linePar=VIM::Eval('g:TagsBase_Perl_linePar');
-	sub ParseTag
-	{
-		$_=VIM::Eval('a:line');
-		/$TagsBase_Perl_pattern/o;
-		#build the result using eval to get the value of the match
-		my $name = eval($TagsBase_Perl_namePar);
-		my $type = eval($TagsBase_Perl_typePar);
-		my $line = eval($TagsBase_Perl_linePar);
-		VIM::DoCommand("let s:name = '$name'");
-		VIM::DoCommand("let s:type = '$type'");
-		VIM::DoCommand("let s:line = '$line'");
-	}
-EOF
+	runtime perl/TagsBase.vim
 endif
 " ------------------------------------------------------------------------
 " SCRIPT VARIABLES: constants and variables who's scope is limited to this
@@ -354,7 +331,10 @@ endfunction
 " Initializes the menu by erasing the old one, creating a new one, and
 " starting it off with a "Rebuild" command
 function! s:InitializeMenu()
+	
 	" first, lets remove the old menu
+	let s:previousTag = ""
+	let s:repeatedTagCount = 0
 	let b:TagsBase_menuCommand =  "amenu " . s:menu_name . ".subname :echo\\ foo\n"
 	let b:TagsBase_menuCommand = b:TagsBase_menuCommand . "amenu " . s:menu_name . ".subname :echo\\ foo\n"
 	let b:TagsBase_menuCommand = b:TagsBase_menuCommand . "aunmenu " . s:menu_name ."\n"
@@ -389,6 +369,10 @@ function! s:ParseTag(line)
 
 	if has('perl')
 		perl ParseTag
+		let s:name = name
+		let s:type = type
+		let s:expression = ""
+		let s:line = line
 		return
 	endif
 

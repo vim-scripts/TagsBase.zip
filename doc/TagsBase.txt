@@ -116,6 +116,11 @@ a certain key)
 
 *TagsBase-ChangeLog*
 
+[07-Oct-2001] 0.7 (vim 6.0)    "Corrected some bugs regarding the situation
+                                When perl is not builtin.
+                                Corrected a bug when there is only one tag in
+                                the file repeated tag generation would
+                                interpret it as being overloaded.
 [07-Oct-2001] 0.7 (vim 6.0)    "Corrected some bugs regarding paths with spaces.
                                 replaced the script local function s:GetTagName
                                 by a global function TagsBase_GetTagName.
