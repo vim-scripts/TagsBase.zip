@@ -6,10 +6,10 @@
 " Last Modified: 1 Octobre 2001
 " Maintainer: Benoit Cerrina, <benoit.cerrina@writeme.com>
 " Location: http://benoitcerrina.dnsalias.org/vim/TagsBase.html.
-" Version: 0.5.2
+" Version: 0.5.3
 " See the accompaning documentation file for information on purpose,
 " installation, requirements and available options.
-
+" License: this is in the public domain.
 
 " prevent multiple loadings ...
 if exists("loaded_TagsBase")
@@ -71,6 +71,10 @@ call s:TagsBaseSet('g:TagsBase_escapeChars','|')
 call s:TagsBaseSet('g:TagsBase_groupByType','1')
 " Does this script get automaticly run?
 call s:TagsBaseSet('g:TagsBase_useAutoCommand','1')
+" Prefixes for the tags files
+call s:TagsBaseSet('g:TagsBase_prefix','.tb.')
+" Sufixes for the tags files
+call s:TagsBaseSet('g:TagsBase_sufix','.tags')
 
 "TAGS PARSING OPTIONS:
 "variables which can be used to customize the way the plugin
@@ -167,9 +171,9 @@ function! s:CreateFile()
     if !exists("b:fileName") || b:fileName == ""
         let dir= fnamemodify(bufname("%"),":p:h")
         let name = fnamemodify(bufname("%"), ":t")
-        let b:fileName = dir . "/" . "." . name . ".tags"
+        let b:fileName = dir . "/" . g:TagsBase_prefix . name . g:TagsBase_sufix
         if !filewritable(b:fileName) && !filewritable(dir)
-            let b:fileName = s:tempDir . "/." . name . ".tags"
+            let b:fileName = s:tempDir . "/" . g:TagsBase_prefix . name . g:TagsBase_sufix
         endif
     endif
     " execute the ctags command on the current file
