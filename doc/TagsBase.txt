@@ -55,14 +55,22 @@ There are several global variables that users can use to change the scripts
 behaviour. In order to set a variable, simply use |:let| in a sourced script
 or in the command line.
 +-----------------------+-----------------------+------------------------------+
-|variable:              |default value:         |description:                  |
+| variable:             |default value:         |description:                  |
++-----------------------+-----------------------+------------------------------+
 |g:TagsBase_groupByType |1 (true)               |group tags in the menu        |
 |g:TagsBase_debug       |0 (false)              |output debug messages         |
-|g:TagsBase_prefix      |'.tb.'                 |prefix for the tags files     |
-|g:TagsBase_sufix       |'.tags'                |suffix for the tags files     |
+|g:TagsBase_CatProg     |cat or type            |program to read a file        |
+|g:TagsBase_rmProg      |rm or del              |program to delete a file      |
+|g:TagsBase_ACMode      |2                      |Autocommand settings 0=None   |
+|                       |                       |1=TagsMenu 2=Both 3=Title     |
+|g:TagsBase_prefix      |.tb.                   |prefix for the tags files     |
+|g:TagsBase_sufix       |.tags                  |suffix for the tags files     |
+|g:TagsBase_CleanUp     |1                      |0=none 1=file in tmp 2=all    |
+|g:TagsBase_TitlePrefix |%t%( %M%)%( (%{expand("%:~:.:h")})%)%( %a%)%=         |
+|                       |                       | 'titlestring' prefix         |
 |                       |                       |                              |
-|g:TagsBase_ctagsCommand|'ctags --fields=Kn -o' |used to launch ctags          |
-|g:TagsBase_Pattern     |'^\([^\t]\{-}\)\t[^\t]\{-}\t\(.\{-}\);"\t\([^\t]*\)\tline:\(\d*\).*$'
+|g:TagsBase_ctagsCommand|ctags --fields=Kn -o   |used to launch ctags          |
+|g:TagsBase_Pattern     |^\([^\t]\{-}\)\t[^\t]\{-}\t\(.\{-}\);"\t\([^\t]*\)\tline:\(\d*\).*$
 |                       |                       |used to parse a tag           |
 |g:TagsBase_namePar     |\1                     |used to parse a tag name      |
 |g:TagsBase_exprPar     |\2                     |used to parse a tag expr      |
@@ -95,23 +103,37 @@ are used in conjunction to produce and parse tags of this format.
 
 *TagsBase-ChangeLog*
 
+[02-Oct-2001] 0.6 (vim 6.0)    "avoids opening a buffer on the tags file,
+								optionnally destroy the created tags files,
+								changed the name of the g:CatProg variable to
+								g:TagsBase_CatProg."
 [02-Oct-2001] 0.5.3 (vim 6.0)  "added new options to select the name of the tags
 								files. Removed the html files. Changed the
-								license to public domain added the  
-								|TagsBase-ChangeLog| and the |TagsBase-Credits| 
-								section to the help. Added a warning about the 
-								existence of the tags files" 
-[02-Oct-2001] 0.5.2 (vim 6.0)  "bug fixes in the sorting of the lines array" 
-[02-Oct-2001] 0.5.1 (vim 6.0)  "bug correction 
-[02-Oct-2001] 0.5 (vim 6.0)    "Added help, made customization easier, packaged into a zip file. 
-								To install unpack in a directory in your runtimepath (see :help runtimepath) and run 
-								:helptags $dirUnpacked/doc 
-								" 
-[02-Oct-2001] 0.4 (vim 6.0) "reorganized and commented the script, support for the builtin tags stack, support for ordered tag file generation, some bugs corrected." 
-[01-Oct-2001] 0.3 (vim 6.0) "added a menu entry to toggle on and off the title string functionality" 
-[01-Oct-2001] 0.2 (vim 6.0) "Corrected dependency on a $TMP variable 
-corrected bug when on an ms system the shell used was a unix type shell, this generated problems due to the shell misinterpreting the '' in a path. 
-If you find any other bugs, please report it by mail to me (benoit.cerrina@writeme.com" 
+								license to public domain added the
+								|TagsBase-ChangeLog| and the |TagsBase-Credits|
+								section to the help. Added a warning about the
+								existence of the tags files"
+[02-Oct-2001] 0.5.2 (vim 6.0)  "bug fixes in the sorting of the lines array"
+[02-Oct-2001] 0.5.1 (vim 6.0)  "bug correction
+[02-Oct-2001] 0.5 (vim 6.0)    "Added help, made customization easier, packaged
+								into a zip file.
+								To install unpack in a directory in your
+								runtimepath (see :help runtimepath) and run
+								:helptags $dirUnpacked/doc
+								"
+[02-Oct-2001] 0.4 (vim 6.0) 	"reorganized and commented the script, support
+								for the builtin tags stack, support for
+								ordered tag file generation, some bugs
+								corrected."
+[01-Oct-2001] 0.3 (vim 6.0) 	"added a menu entry to toggle on and off the
+								title string functionality"
+[01-Oct-2001] 0.2 (vim 6.0) 	"Corrected dependency on a $TMP variable
+								corrected bug when on an M$ system the shell
+								used was a unix type shell, this generated
+								problems due to the shell misinterpreting the
+								'' in a path.
+
+If you find any other bugs, please report it by mail to me (benoit.cerrina@writeme.com"
 
 
 
@@ -119,7 +141,7 @@ If you find any other bugs, please report it by mail to me (benoit.cerrina@write
 credits should go to:
 Jay Dickon Glanville  dickon@nortelnetworks.com
 Alexey Marinichev   lyosha@lyosha.2y.net
-who made the scripts which were the basis for this one and to 
+who made the scripts which were the basis for this one and to
 Bram Molenaar Bram@vim.org for vim as a whole
 
 

@@ -6,7 +6,7 @@
 " Last Modified: 1 Octobre 2001
 " Maintainer: Benoit Cerrina, <benoit.cerrina@writeme.com>
 " Location: http://benoitcerrina.dnsalias.org/vim/TagsBase.html.
-" Version: 0.5.3
+" Version: 0.6
 " See the accompaning documentation file for information on purpose,
 " installation, requirements and available options.
 " License: this is in the public domain.
@@ -36,27 +36,12 @@ command! TagsBaseRebuild :call <SID>TagsBase_createMenu()
 
 " ------------------------------------------------------------------------
 " AUTO COMMANDS: things to kick start the script
+aug TagsBase
 autocmd FileType * call <SID>TagsBase_checkFileType()
-set updatetime=500
-
-function s:TBTitle()
-    aug TBTitle
-    if exists("s:titleOn") && s:titleOn
-        let s:titleOn=0
-        "remove autocommands for group TBTitle"
-        au! 
-        if exists("b:titlestring")
-            let &titlestring=b:titlestring
-        else
-            let &titlestring=""
-        endif
-    else
-        let s:titleOn=1
-        let b:titlestring=&titlestring
-        autocmd CursorHold * if exists('b:lines') | let &titlestring='%t%( %M%)%( (%{expand("%:~:.:h")})%)%( %a%)%='.<SID>GetTagName(line(".")) | endif
-    endif
-    aug END
-endfunction
+set updatetime=600
+autocmd VimLeavePre * call <SID>CleanupStuff()
+autocmd CursorHold * call <SID>TitleHandler()
+aug END
 
 
 " ------------------------------------------------------------------------
@@ -70,11 +55,17 @@ call s:TagsBaseSet('g:TagsBase_escapeChars','|')
 " Are the tags grouped and submenued by tag type?
 call s:TagsBaseSet('g:TagsBase_groupByType','1')
 " Does this script get automaticly run?
-call s:TagsBaseSet('g:TagsBase_useAutoCommand','1')
+call s:TagsBaseSet('g:TagsBase_ACMode','1')
 " Prefixes for the tags files
 call s:TagsBaseSet('g:TagsBase_prefix','.tb.')
 " Sufixes for the tags files
 call s:TagsBaseSet('g:TagsBase_sufix','.tags')
+" Delete the tags file on exit? 0 no cleanup 1 cleanup the files
+" created in a temp directory, 2 clean everything
+call s:TagsBaseSet('g:TagsBase_CleanUp','1')
+" prefix to the titlestring
+call s:TagsBaseSet('g:TagsBase_TitlePrefix','%t%( %M%)%( (%{expand("%:~:.:h")})%)%( %a%)%=')
+
 
 "TAGS PARSING OPTIONS:
 "variables which can be used to customize the way the plugin
@@ -118,7 +109,8 @@ let s:repeatedTagCount = 0
 let s:length = 8
 " strlen(spaces) must be at least s:length.
 let s:spaces = '               '
-
+" list of files to delete at exit
+let s:ToDel = ''
 
 
 " ---------------------------------------------------------------------
@@ -133,26 +125,85 @@ endif
 
 let s:tempDir=fnamemodify(tempname(),":p:h")
 
-if !exists("g:CatProg") || g:CatProg == ""
-    if executable("cat")
-        call s:TagsBaseSet('g:CatProg','"cat"')
-    elseif has('win32') || has('win95') || has('win16') || has('dos32') || has('dos16')
-        call s:TagsBaseSet('g:CatProg','"type"')
-    else
-        let g: CatProg = inputdialog("Please enter location of cat program:")
-    endif
-endif
+
+"helper fonction for runtime configuration
+"a:var is the name of a globale variable which
+"should hold the name of an executable program
+"a:unix is the unix name of that program,
+"a:ms is the name of that program or dos command in the Ms world
+"a:msg is a last resort message describing the program
+function! s:TestProg(var, unix, ms, msg)
+	if exists(a:var)
+		exe "let loc = '" . a:var ."'"
+		if executable(loc)
+			return
+		endif
+	endif
+	if executable(a:unix)
+		exe "let " . a:var . " = '" . a:unix . "'"
+	elseif has('win32') || has('win95') || has('win16') || has('dos32') || has('dos16')
+		exe "let " . a:var . " = '" . a:ms . "'"
+	else
+		exe "let " . a:var . " = inputdialog('Please enter location of a program to ". a:msg . ":')"
+	endif
+endfunction
+
+
+
+
+call s:TestProg("g:TagsBase_CatProg", 'cat', 'type', 'print a file on the console')
+call s:TestProg("g:TagsBase_rmProg", 'rm', 'del', 'delete a file')
 
 " ------------------------------------------------------------------------
 " SCRIPT SCOPE FUNCTIONS: functions with a local script scope
+" (not used in the runtime config part)
 
 
 " This function is called everytime a filetype is set.  All it does is
 " check the filetype setting, and if it is one of the filetypes recognized
 " by ctags, then the TagsBase_createMenu() function is called.  However, the
-" g:TagsBase_useAutoCommand == FALSE can veto the auto execution.
+" g:TagsBase_ACMode == FALSE can veto the auto execution.
+"
+function! s:TitleHandler()
+   if exists('b:lines') &&  exists("s:titleOn") && s:titleOn && g:TagsBase_ACMode > 1
+	   let &titlestring= g:TagsBase_TitlePrefix . <SID>GetTagName(line("."))
+   endif
+endfunction
+
+function! s:TBTitle()
+    if exists("s:titleOn") && s:titleOn
+		"stop title handler
+        let s:titleOn=0
+		"restore title
+		if exists("b:titlestring")
+			let &titlestring=b:titlestring
+		else
+			let &titlestring=""
+		endif
+		if g:TagsBase_ACMode == 2
+			let g:TagsBase_ACMode = 1
+		elseif g:TagsBase_ACMode == 3
+			let g:TagsBase_ACMode = 0
+		endif
+	else
+		"save title
+		let b:titlestring=&titlestring
+		"start title handler
+		let s:titleOn=1
+		if g:TagsBase_ACMode < 2
+			call confirm('you may need to rebuild the TagsBase to gain access to the menu', 'ok')
+			if g:TagsBase_ACMode == 1
+				let g:TagsBase_ACMode = 2
+			elseif g:TagsBase_ACMode == 0
+				let g:TagsBase_ACMode = 3
+			endif
+		endif
+	endif
+endfunction
+
+
 function! s:TagsBase_checkFileType()
-    if !g:TagsBase_useAutoCommand
+    if g:TagsBase_ACMode == 3
         return
     endif
     call s:DebugVariable( "filetype", &ft )
@@ -163,7 +214,33 @@ function! s:TagsBase_checkFileType()
     endif
 endfunction
 
+" Clean up the files if required
+function! s:CleanupStuff()
+	"delete all files in s:ToDel list
+	while strlen(s:ToDel) > 0
+		let currentFile = strpart(s:ToDel, 0, stridx(s:ToDel, "\n"))
+		exe "let loc = s:f_".currentFile
+		if loc <= g:TagsBase_CleanUp
+			let lCommand = g:TagsBase_rmProg . " " . currentFile
+			let lCommand = substitute(lCommand, '[/\\]', s:slash, 'g')
+			call system(lCommand)
+		endif
+	endwhile
+endfunction
 
+" Creates a file
+" name is the name of the file to create, mode is 1 for files in a temp
+" directory 2 for files in a normal directory
+function! s:SetFileName(iName, iMode)
+	let b:fileName = a:iName
+	if g:TagsBase_CleanUp >= a:iMode
+		"use the variable script dictionary as a hashtable
+		if !exists("s:f_" . b:fileName)
+			exe "let s:f_" . b:fileName . " = " . a:iMode
+			let s:ToDel = s:ToDel . b:fileName . "\n"
+		endif
+	endif
+endfunction
 
 " Creates the tag file associated with a buffer and return its name
 function! s:CreateFile()
@@ -174,6 +251,9 @@ function! s:CreateFile()
         let b:fileName = dir . "/" . g:TagsBase_prefix . name . g:TagsBase_sufix
         if !filewritable(b:fileName) && !filewritable(dir)
             let b:fileName = s:tempDir . "/" . g:TagsBase_prefix . name . g:TagsBase_sufix
+			call s:SetFileName(b:fileName, 1)
+		else
+			call s:SetFileName(b:fileName, 2)
         endif
     endif
     " execute the ctags command on the current file
@@ -189,14 +269,8 @@ function! s:CreateFile()
         silent execute "cd " . dir
         call system( lCommand )
         silent execute "cd " . olddir
-        
+
         let fileName = b:fileName   "local variable because we'll switch buffer
-        
-        silent execute "badd " . fileName
-        silent execute "sbuffer " . fileName
-        silent g/^!/d
-        silent w
-        silent execute "bwipe! " . fileName
     endif
     " create and switch to a new, temporary buffer.
     return b:fileName
@@ -206,13 +280,13 @@ endfunction
 
 " This is the function that actually calls ctags, parses the output, and
 " creates the menus.
-function! s:TagsBase_createMenu() 
+function! s:TagsBase_createMenu()
 
     call s:InitializeMenu()
     let fileName = s:CreateFile()
 
     "read the file in a variable
-    let command = g:CatProg.' '.b:fileName
+    let command = g:TagsBase_CatProg.' '.b:fileName
     let command = substitute(command, '[/\\]', s:slash, 'g')
 
     call s:DebugVariable("command", command)
@@ -220,16 +294,22 @@ function! s:TagsBase_createMenu()
 
     " loop over the entire file, parsing each line.  Apparently, this can be
     " done with a single command, but I can't remember it.
-    let whilecount = 1
     let b:lines = ''
     while strlen(ctags) > 0
-        let current = strpart(ctags, 0, stridx(ctags, "\n"))
-        call s:ParseTag(current)
-        call s:MakeMenuEntry()
-
-        call s:MakeTagBaseEntry()
-        let whilecount = whilecount + 1
-        let ctags = strpart(ctags, stridx(ctags, "\n")+1)
+		let delimIdx =  stridx(ctags, "\n")
+		"case there is no ending \n
+		if delimIdx == -1
+			let delimIdx = strlen(ctags)
+		endif
+        let current = strpart(ctags, 0, delimIdx)
+		if match(current, "^!") == -1
+			call s:ParseTag(current)
+			call s:MakeMenuEntry()
+			if g:TagsBase_ACMode > 1
+				call s:MakeTagBaseEntry()
+			endif
+		endif
+        let ctags = strpart(ctags, delimIdx+1)
     endwhile
 
     let b:lines = b:lines."9999999"
@@ -245,7 +325,7 @@ function! s:InitializeMenu()
     execute "aunmenu " . s:menu_name
 
     " and now, add the top of the new menu
-    execute "amenu " . s:menu_name . ".&Rebuild\\ Tags\\ Menu :call <SID>TagsBase_createMenu()<CR><CR>"
+    execute "amenu " . s:menu_name . ".&Rebuild\\ Tags\\ Base :call <SID>TagsBase_createMenu()<CR><CR>"
     execute "amenu " . s:menu_name . ".&Toggle\\ Title\\ Autocommand :call <SID>TBTitle()<CR><CR>"
     execute "amenu " . s:menu_name . ".-SEP- :"
 endfunction
@@ -270,7 +350,7 @@ function! s:ParseTag(line)
     let s:line = substitute(a:line, g:TagsBase_pattern, g:TagsBase_linePar, '')
 
     if match( s:expression, "[0-9]" ) == 0
-        " this expression is a line number not a pattern so prepend line number 
+        " this expression is a line number not a pattern so prepend line number
         " with : to make it an absolute line command not a relative one
         let s:expression = ":" . s:expression
     else
@@ -296,7 +376,7 @@ function! s:MakeMenuEntry()
     endif
 
     " build the menu command
-    let menu = "amenu " . s:menu_name 
+    let menu = "amenu " . s:menu_name
     if g:TagsBase_groupByType
         let menu = menu . ".&" . s:type
     endif
@@ -304,7 +384,7 @@ function! s:MakeMenuEntry()
     if !g:TagsBase_groupByType
         let menu = menu . "<tab>" . s:type
     endif
-    let menu = menu . " " . ":call <SID>GoToTag('". s:name . "', " . s:repeatedTagCount . ")<CR><cr>" 
+    let menu = menu . " " . ":call <SID>GoToTag('". s:name . "', " . s:repeatedTagCount . ")<CR><cr>"
     call s:DebugVariable( "Menu command ", menu )
     " escape some pesky characters
     " this is probably not usefull anymore since I doubt there are any
@@ -378,7 +458,7 @@ endfunction
 "retrieves the name of the last tag defined for a given line
 function! s:GetTagName(curline)
     let index = s:BinarySearch(a:curline)
-    if index == -1 
+    if index == -1
         return ""
     endif
     exe "let ret=b:l".s:GetLine(index)
