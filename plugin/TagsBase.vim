@@ -6,7 +6,7 @@
 " Last Modified: 1 Octobre 2001
 " Maintainer: Benoit Cerrina, <benoit.cerrina@writeme.com>
 " Location: http://benoitcerrina.dnsalias.org/vim/TagsBase.html.
-" Version: 0.9
+" Version: 0.9.2
 " See the accompaning documentation file for information on purpose,
 " installation, requirements and available options.
 " License: this is in the public domain.
@@ -101,10 +101,10 @@ if has('perl')
 	call s:TagsBaseSet('g:TagsBase_linePar','$5')
 	source <sfile>:p:h/perl/TagsBase.vim
 else
-"GetVimIndent	C:\vim\vim60\indent\vim.vim	/^function GetVimIndent()$/;"	function	line:20
-"this is the type of line matched by the following pattern"
-"this can be overriden but the parenthesis must still have the meaning in the
-"following variables
+	"GetVimIndent	C:\vim\vim60\indent\vim.vim	/^function GetVimIndent()$/;"	function	line:20
+	"this is the type of line matched by the following pattern"
+	"this can be overriden but the parenthesis must still have the meaning in the
+	"following variables
 	call s:TagsBaseSet('g:TagsBase_pattern','^\([^\t]\{-}\)\t[^\t]\{-}\t\(.\{-}\);"\t\([^\t]*\)\tline:\(\d*\).*$')
 	call s:TagsBaseSet('g:TagsBase_namePar','\1')
 	call s:TagsBaseSet('g:TagsBase_exprPar','\2')
@@ -301,6 +301,7 @@ function! s:CreateFile(tmp)
 			call s:CreateFile(1)
 		endif
 		let fileName = b:fileName   "local variable because we'll switch buffer
+		let  &l:tags=b:fileName.','.&tags
 		return 1
 	else
 		return 0
@@ -376,7 +377,7 @@ function! s:InitializeMenu()
 	let b:TagsBase_menuCommand =  "amenu " . g:TagsBase_menuName . ".subname :echo\\ foo\n"
 	let b:TagsBase_menuCommand = b:TagsBase_menuCommand . "aunmenu " . g:TagsBase_menuName ."\n"
 	"	and now, add the top of the new menu
-	
+
 	let b:TagsBase_menuCommand = b:TagsBase_menuCommand .  
 				\ "amenu <silent>" . g:TagsBase_menuName . ".&Open\\ Tags\\ Buffer :TagsWindow<CR><CR>\n"
 	let b:TagsBase_menuCommand = b:TagsBase_menuCommand .  
@@ -522,7 +523,7 @@ function! s:BinarySearch(curline)
 endfunction
 
 function! s:GetTagLine(curline)
-    let index = s:BinarySearch(a:curline)
+	let index = s:BinarySearch(a:curline)
 	if index == -1
 		return -1
 	endif
@@ -598,7 +599,7 @@ endfunction
 
 function! s:TagWindow()
 	let bufnr = bufnr('%')
-	
+
 	sp TagsBuffer
 	let b:bufnr = bufnr
 	let b:tagFile = getbufvar(b:bufnr, "fileName")
@@ -614,7 +615,7 @@ function! s:UpdateTagBuffer(bufnr)
 	exe 'b '.a:bufnr
 	set modifiable
 	silent 0,$del
-	silent exe 'r! ctags -x ' . fnamemodify(bufname(b:bufnr), ":p")
+	silent exe 'r! ctags -x "' . fnamemodify(bufname(b:bufnr), ":p").'"'
 	"reorder the buffer with line\ttype\t\tname"
 	silent :%s/\(\S*\)\s\+\(\S*\)\s\+\(\S*\)\s\+\(\S*\)\s\+.*/\3\t\2\t\t\1/
 	set nomodifiable
@@ -623,17 +624,18 @@ endfunction
 
 function! TagsBaseBufGotoTag()
 	"get the line number
-    let curline = line('.')
-	let tagname = matchstr(getline(curline), '\%(^\d\+\s\+\S\+\)\@<=\s*')
-    "find the tag index
-    let index = 0
-    let curline = curline -1
-    let curtag = matchstr(getline(curline), '\%(^\d\+\s\+\S\+\)\@<=\s*')
-    while tagname == curtag
-        let index = index + 1
-        let curline = curline -1
-        let curtag = matchstr(getline(curline), '\%(^\d\+\s\+\S\+\)\@<=\s*')
-    endwhile
+	let regexp = '\%(^\d\+\s\+\S\+\s\+\)\@<=\S\+'
+	let curline = line('.')
+	let tagname = matchstr(getline(curline), regexp )
+	"find the tag index
+	let index = 0
+	let curline = curline -1
+	let curtag = matchstr(getline(curline), regexp)
+	while tagname == curtag
+		let index = index + 1
+		let curline = curline -1
+		let curtag = matchstr(getline(curline), regexp)
+	endwhile
 	let bufnr = b:bufnr
 	quit
 	exe 'b ' . bufnr

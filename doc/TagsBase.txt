@@ -2,6 +2,22 @@
 *TagsBase.txt*          Plugin for tag related advanced features
 
 
+1.      Description                             |TagsBase-Description|
+2.      Requirements                            |TagsBase-requirements|
+3.      Customization                           |TagsBase-Options| |TagsBase-Customization|
+4.      Parsing                                 |TagsBase-Parsing|
+5.      Functions                               |TagsBase-Functions|
+        5.1. TagsBase_GetTagName({line})        |TagsBase_GetTagName()|
+        5.2. TagsBase_GetTagType({line})        |TagsBase_GetTagType()|
+        5.3. TagsBase_GoToTag({TagName}, {index}) |TagsBase_GoToTag()|
+6.      Special Buffer                          |TagsBase-Buffer| |TagsBase-Window| |:TagsWindow|
+7.      Known bugs                              |TagsBase-Bugs|
+8.      ChangeLog                               |TagsBase-ChangeLog|
+9.      Todo                                    |TagsBase-Todo|
+10.      Credits                                 |TagsBase-Credits|
+
+
+*TagsBase-Description*
 1. Description
 Tags Base is the result of the merge and enhancements of the scripts:
  *TagsMenu (http://members.home.net/jayglanville/tagsmenu/TagsMenu.html) script
@@ -32,18 +48,6 @@ Right now the feature provided are:
     TagsBase manipulates all tags supported by |ctags|. (For the full list of
     supported tags and attributes, see "http://ctags.sourceforge.net/"
 
-1.      Requirements                            |TagsBase-requirements|
-2.      Customization                           |TagsBase-Options| |TagsBase-Customization|
-3.      Parsing                                 |TagsBase-Parsing|
-4.      Functions                               |TagsBase-Functions|
-        4.1. TagsBase_GetTagName({line})        |TagsBase_GetTagName()|
-        4.2. TagsBase_GetTagType({line})        |TagsBase_GetTagType()|
-        4.3. TagsBase_GoToTag({TagName}, {index}) |TagsBase_GoToTag()|
-5.      Special Buffer                          |TagsBase-Buffer| |TagsBase-Window| |:TagsWindow|
-6.      Known bugs                              |TagsBase-Bugs|
-7.      ChangeLog                               |TagsBase-ChangeLog|
-8.      Todo                                    |TagsBase-Todo|
-9.      Credits                                 |TagsBase-Credits|
 
 ===============================================================================
 *TagsBase-requirements*
@@ -99,6 +103,7 @@ call s:TagsBaseSet('g:TagsBase_sufix','.tags')
 
 
 *TagsBase-Parsing*
+4. Parsing
 Parsing in TagsBase is done using a regexp and some substitution strings they
 are in global variable so they can be customized, right now the regexp parses a
 tag with the format:
@@ -120,7 +125,9 @@ are used in conjunction to produce and parse tags of this format.
 
 ===============================================================================
 *TagsBase-Functions*
-TagsBase_GetTagName({line})                         *TagsBase_GetTagName()*
+5. Functions
+
+5.1     TagsBase_GetTagName({line})                         *TagsBase_GetTagName()*
 the result is the name of the last tag define above {line}.
 {line} is either a line number (which must be matched by the '\d\+' regexp,
         i.e.: a decimal number) or a parameter for the |line()| function.
@@ -130,7 +137,7 @@ than the title bar (in the status bar for example or in a dialog when you hit
 a certain key)
 
 
-TagsBase_GetTagType({line})                         *TagsBase_GetTagType()*
+5.2     TagsBase_GetTagType({line})                         *TagsBase_GetTagType()*
 the result is the type of the last tag define above {line}.
 {line} is either a line number (which must be matched by the '\d\+' regexp,
         i.e.: a decimal number) or a parameter for the |line()| function.
@@ -139,7 +146,7 @@ This function is to be used if you want to display the tag type someplace else
 than the title bar (in the status bar for example or in a dialog when you hit
 a certain key)
 
-TagsBase_GoToTag({TagName}, {index})                *TagsBase_GoToTag()*
+5.3     TagsBase_GoToTag({TagName}, {index})                *TagsBase_GoToTag()*
 uses vim tags facility to jump to a tag and push the tag to the tag stack.
 Jumps to a tag in the tagsbase, TagName is the name of the tag index is the
 number of repeat search to do (if you want the first tag with this name use 0)
@@ -149,6 +156,7 @@ number of repeat search to do (if you want the first tag with this name use 0)
 
 ===============================================================================
 *TagsBase-Buffer* *TagsBase-Window* *:TagsWindow*
+6. Special Buffer/Window
 By using the TagsWindow command one can open a buffer with the list of all
 tags in the current buffer.
 This buffer can then be used to jump to any of those tag by doubleclicking or by
@@ -160,17 +168,17 @@ hitting enter on the appropriate line .
 +--------------+-----------+
 ===============================================================================
 *TagsBase-Bugs*
-1)  unable to write tag file if the security does not allow it.
-        VIM cannot detect the ACL on an NTFS file system, this
-        creates cases when TagsBase thinks it can create a tagsfile
-        but it cannot.  No workaround yet
-2)  several files with the same name in different directories which
-        are all readonly, the tags from the first file will be used.
-        Workaround: rebuild your tags base when in this configuration
+7. Known bugs
 
 
 
 *TagsBase-ChangeLog*
+8. ChangeLog
+[28-Nov-2001] 0.9.2 (vim 6.0) "corrected several bugs when the file path
+                               contains some spaces
+                               corrected a bug with the TagsWindow"
+[12-Nov-2001] 0.9.1 (vim 6.0) "corrected a bug in the current tag lookup when
+                                perl is not available"
 [11-Nov-2001] 0.9   (vim 6.0) "added the TagsWindow command to visualize tags
                                in a buffer.
                                added a menu entry to opent the Tags Buffer.
@@ -262,15 +270,18 @@ hitting enter on the appropriate line .
 If you find any other bugs, please report it by mail to me (benoit.cerrina@writeme.com"
 
 *TagsBase-Todo*
-TODO:
-*add a better way to navigate using the tags buffer
+9. TODO:
+*add make the TagsWindow more usable
 *add cascading menu for win32 no perl
 *add check for non win32 in code to make it still work or
      at least put out a message and skip the computation
      when the menu is too big
+*add check to remove the error message due to no cascading
+     menu support outside of win32
 
 
 *TagsBase-Credits*
+10. Credits
 credits should go to:
 Jay Dickon Glanville  dickon@nortelnetworks.com
 Alexey Marinichev   lyosha@lyosha.2y.net
