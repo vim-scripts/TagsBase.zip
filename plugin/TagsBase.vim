@@ -6,22 +6,22 @@
 " Last Modified: 1 Octobre 2001
 " Maintainer: Benoit Cerrina, <benoit.cerrina@writeme.com>
 " Location: http://benoitcerrina.dnsalias.org/vim/TagsBase.html.
-" Version: 0.6
+" Version: 0.7
 " See the accompaning documentation file for information on purpose,
 " installation, requirements and available options.
 " License: this is in the public domain.
 
 " prevent multiple loadings ...
 if exists("loaded_TagsBase")
-    finish
+	finish
 endif
 let loaded_TagsBase = 1
 
 " function to set a global variable if it is not already set
 function! s:TagsBaseSet(varname, varvalue)
-    if !exists(a:varname)
-	execute "let ". a:varname . " = '" . a:varvalue ."'"
-    endif
+	if !exists(a:varname)
+		execute "let ". a:varname . " = '" . a:varvalue ."'"
+	endif
 endfunction
 
 
@@ -37,7 +37,7 @@ command! TagsBaseRebuild :call <SID>TagsBase_createMenu()
 " ------------------------------------------------------------------------
 " AUTO COMMANDS: things to kick start the script
 aug TagsBase
-autocmd FileType * call <SID>TagsBase_checkFileType()
+autocmd BufEnter * call <SID>TagsBase_checkFileType()
 set updatetime=600
 autocmd VimLeavePre * call <SID>CleanupStuff()
 autocmd CursorHold * call <SID>TitleHandler()
@@ -77,9 +77,8 @@ call s:TagsBaseSet('g:TagsBase_TitlePrefix','%t%( %M%)%( (%{expand("%:~:.:h")})%
 "information being appended to the tag format, those are then used to build
 "the menu and find the value of the tag preceding a given line
 call s:TagsBaseSet('g:TagsBase_ctagsCommand',"ctags --fields=Kn -o ")
-"
+"GetVimIndent	C:\vim\vim60\indent\vim.vim	/^function GetVimIndent()$/;"	function	line:20
 "this is the type of line matched by the following pattern"
-"bignumClass	C:\dev\jRuby\org\jruby\Ruby.java	72;"	field	class:Ruby	file:"
 "this can be overriden but the parenthesis must still have the meaning in the
 "following variables
 call s:TagsBaseSet('g:TagsBase_pattern','^\([^\t]\{-}\)\t[^\t]\{-}\t\(.\{-}\);"\t\([^\t]*\)\tline:\(\d*\).*$')
@@ -87,9 +86,32 @@ call s:TagsBaseSet('g:TagsBase_namePar','\1')
 call s:TagsBaseSet('g:TagsBase_exprPar','\2')
 call s:TagsBaseSet('g:TagsBase_typePar','\3')
 call s:TagsBaseSet('g:TagsBase_linePar','\4')
-
-
-
+if has('perl')
+	call s:TagsBaseSet('g:TagsBase_Perl_pattern','^(?!!)([^\t]*)\t[^\t]*\t(.*);"\t([^\t]*)\tline:(\d*).*$')
+	call s:TagsBaseSet('g:TagsBase_Perl_namePar','$1')
+	call s:TagsBaseSet('g:TagsBase_Perl_exprPar','$2')
+	call s:TagsBaseSet('g:TagsBase_Perl_typePar','$3')
+	call s:TagsBaseSet('g:TagsBase_Perl_linePar','$4')
+	perl << EOF
+	$^W=1;
+	$TagsBase_Perl_pattern=VIM::Eval('g:TagsBase_Perl_pattern');
+	$TagsBase_Perl_typePar=VIM::Eval('g:TagsBase_Perl_typePar');
+	$TagsBase_Perl_namePar=VIM::Eval('g:TagsBase_Perl_namePar');
+	$TagsBase_Perl_linePar=VIM::Eval('g:TagsBase_Perl_linePar');
+	sub ParseTag
+	{
+		$_=VIM::Eval('a:line');
+		/$TagsBase_Perl_pattern/o;
+		#build the result using eval to get the value of the match
+		my $name = eval($TagsBase_Perl_namePar);
+		my $type = eval($TagsBase_Perl_typePar);
+		my $line = eval($TagsBase_Perl_linePar);
+		VIM::DoCommand("let s:name = '$name'");
+		VIM::DoCommand("let s:type = '$type'");
+		VIM::DoCommand("let s:line = '$line'");
+	}
+EOF
+endif
 " ------------------------------------------------------------------------
 " SCRIPT VARIABLES: constants and variables who's scope is limited to this
 " script, but not limited to the inside of a method.
@@ -118,9 +140,9 @@ let s:ToDel = ''
 "  some initialisation depending on the environment
 
 if match(&shell, 'sh', '') == -1
-    let s:slash='\'
+	let s:slash='\'
 else
-    let s:slash='/'
+	let s:slash='/'
 endif
 
 let s:tempDir=fnamemodify(tempname(),":p:h")
@@ -165,15 +187,15 @@ call s:TestProg("g:TagsBase_rmProg", 'rm', 'del', 'delete a file')
 " g:TagsBase_ACMode == FALSE can veto the auto execution.
 "
 function! s:TitleHandler()
-   if exists('b:lines') &&  exists("s:titleOn") && s:titleOn && g:TagsBase_ACMode > 1
-	   let &titlestring= g:TagsBase_TitlePrefix . <SID>GetTagName(line("."))
-   endif
+	if exists('b:lines') &&  exists("s:titleOn") && s:titleOn && g:TagsBase_ACMode > 1
+		let &titlestring= g:TagsBase_TitlePrefix . <SID>GetTagName(line("."))
+	endif
 endfunction
 
 function! s:TBTitle()
-    if exists("s:titleOn") && s:titleOn
+	if exists("s:titleOn") && s:titleOn
 		"stop title handler
-        let s:titleOn=0
+		let s:titleOn=0
 		"restore title
 		if exists("b:titlestring")
 			let &titlestring=b:titlestring
@@ -191,7 +213,6 @@ function! s:TBTitle()
 		"start title handler
 		let s:titleOn=1
 		if g:TagsBase_ACMode < 2
-			call confirm('you may need to rebuild the TagsBase to gain access to the menu', 'ok')
 			if g:TagsBase_ACMode == 1
 				let g:TagsBase_ACMode = 2
 			elseif g:TagsBase_ACMode == 0
@@ -203,15 +224,15 @@ endfunction
 
 
 function! s:TagsBase_checkFileType()
-    if g:TagsBase_ACMode == 3
-        return
-    endif
-    call s:DebugVariable( "filetype", &ft )
-    " sorry about the bad form of this if statement, but apparently, the
-    " expression needs to be terminated by an EOL. (I could use if/elseif...)
-    if  (&ft == "asm") || (&ft == "awk") || (&ft == "c") || (&ft == "cpp") || (&ft == "sh") || (&ft == "cobol") || (&ft == "eiffel") || (&ft == "fortran") || (&ft == "java") || (&ft == "lisp") || (&ft == "make") || (&ft == "pascal") || (&ft == "perl") || (&ft == "php") || (&ft == "python") || (&ft == "rexx") || (&ft == "ruby") || (&ft == "scheme") || (&ft == "tcl") || (&ft == "vim") || (&ft == "cxx")
-        call s:TagsBase_createMenu()
-    endif
+	if g:TagsBase_ACMode == 3
+		return
+	endif
+	call s:DebugVariable( "filetype", &ft )
+	" sorry about the bad form of this if statement, but apparently, the
+	" expression needs to be terminated by an EOL. (I could use if/elseif...)
+	if  (&ft == "asm") || (&ft == "awk") || (&ft == "c") || (&ft == "cpp") || (&ft == "sh") || (&ft == "cobol") || (&ft == "eiffel") || (&ft == "fortran") || (&ft == "java") || (&ft == "lisp") || (&ft == "make") || (&ft == "pascal") || (&ft == "perl") || (&ft == "php") || (&ft == "python") || (&ft == "rexx") || (&ft == "ruby") || (&ft == "scheme") || (&ft == "tcl") || (&ft == "vim") || (&ft == "cxx")
+		call s:TagsBase_createMenu()
+	endif
 endfunction
 
 " Clean up the files if required
@@ -242,38 +263,41 @@ function! s:SetFileName(iName, iMode)
 	endif
 endfunction
 
-" Creates the tag file associated with a buffer and return its name
+" Creates the tag file associated with a buffer and stores its name in
+" b:fileName
+" returns 1 if the file was regenerated 0 otherwise
 function! s:CreateFile()
-    "build file name"
-    if !exists("b:fileName") || b:fileName == ""
-        let dir= fnamemodify(bufname("%"),":p:h")
-        let name = fnamemodify(bufname("%"), ":t")
-        let b:fileName = dir . "/" . g:TagsBase_prefix . name . g:TagsBase_sufix
-        if !filewritable(b:fileName) && !filewritable(dir)
-            let b:fileName = s:tempDir . "/" . g:TagsBase_prefix . name . g:TagsBase_sufix
+	"build file name"
+	if !exists("b:fileName") || b:fileName == ""
+		let dir= fnamemodify(bufname("%"),":p:h")
+		let name = fnamemodify(bufname("%"), ":t")
+		let b:fileName = dir . "/" . g:TagsBase_prefix . name . g:TagsBase_sufix
+		if !filewritable(b:fileName) && !filewritable(dir)
+			let b:fileName = s:tempDir . "/" . g:TagsBase_prefix . name . g:TagsBase_sufix
 			call s:SetFileName(b:fileName, 1)
 		else
 			call s:SetFileName(b:fileName, 2)
-        endif
-    endif
-    " execute the ctags command on the current file
-    if !filereadable(b:fileName) || getftime(b:fileName) < getftime(@%) || g:TagsBase_debug
-        let lCommand = g:TagsBase_ctagsCommand . b:fileName . " " . fnamemodify(bufname("%"), ":p")
-        let lCommand = substitute(lCommand, '[/\\]', s:slash, 'g')
-        call s:DebugVariable( "lCommand", lCommand )
-        "vim uses the relative path relative to the path of the tag file while
-        "ctags relative to the path when running ctags, therefore we need to
-        "change the directory
-        let dir=fnamemodify(b:fileName , ":p:h")
-        let olddir=getcwd()
-        silent execute "cd " . dir
-        call system( lCommand )
-        silent execute "cd " . olddir
+		endif
+	endif
+	" execute the ctags command on the current file
+	if !filereadable(b:fileName) || getftime(b:fileName) < getftime(@%) || g:TagsBase_debug
+		let lCommand = g:TagsBase_ctagsCommand . b:fileName . " " . fnamemodify(bufname("%"), ":p")
+		let lCommand = substitute(lCommand, '[/\\]', s:slash, 'g')
+		call s:DebugVariable( "lCommand", lCommand )
+		"vim uses the relative path relative to the path of the tag file while
+		"ctags relative to the path when running ctags, therefore we need to
+		"change the directory
+		let dir=fnamemodify(b:fileName , ":p:h")
+		let olddir=getcwd()
+		silent execute "cd " . dir
+		call system( lCommand )
+		silent execute "cd " . olddir
 
-        let fileName = b:fileName   "local variable because we'll switch buffer
-    endif
-    " create and switch to a new, temporary buffer.
-    return b:fileName
+		let fileName = b:fileName   "local variable because we'll switch buffer
+		return 1
+	else
+		return 0
+	endif
 endfunction
 
 
@@ -282,37 +306,45 @@ endfunction
 " creates the menus.
 function! s:TagsBase_createMenu()
 
-    call s:InitializeMenu()
-    let fileName = s:CreateFile()
+	let start = localtime()
+	
+	if !s:CreateFile() && exists("b:TagsBase_menuCommand")
+		"tags file didn't change therefore no need to recompute the menu
+		execute b:TagsBase_menuCommand
+		return
+	endif	
+	call s:InitializeMenu()
+	"check if the file is readable
+	if !filereadable(b:fileName)
+		return
+	endif
+	"read the file in a variable
+	let command = g:TagsBase_CatProg.' '.b:fileName
+	let command = substitute(command, '[/\\]', s:slash, 'g')
 
-    "read the file in a variable
-    let command = g:TagsBase_CatProg.' '.b:fileName
-    let command = substitute(command, '[/\\]', s:slash, 'g')
+	call s:DebugVariable("command", command)
+	let ctags = system(command)
 
-    call s:DebugVariable("command", command)
-    let ctags = system(command)
-
-    " loop over the entire file, parsing each line.  Apparently, this can be
-    " done with a single command, but I can't remember it.
-    let b:lines = ''
-    while strlen(ctags) > 0
+	" loop over the entire file, parsing each line.  Apparently, this can be
+	" done with a single command, but I can't remember it.
+	let b:lines = ''
+	while strlen(ctags) > 0
 		let delimIdx =  stridx(ctags, "\n")
 		"case there is no ending \n
 		if delimIdx == -1
 			let delimIdx = strlen(ctags)
 		endif
-        let current = strpart(ctags, 0, delimIdx)
-		if match(current, "^!") == -1
+		let current = strpart(ctags, 0, delimIdx)
+		if current[0] != '!'
 			call s:ParseTag(current)
 			call s:MakeMenuEntry()
-			if g:TagsBase_ACMode > 1
-				call s:MakeTagBaseEntry()
-			endif
+			call s:MakeTagBaseEntry()
 		endif
-        let ctags = strpart(ctags, delimIdx+1)
-    endwhile
-
-    let b:lines = b:lines."9999999"
+		let ctags = strpart(ctags, delimIdx+1)
+	endwhile
+	let time = localtime() - start
+	let b:lines = b:lines."9999999"
+	execute b:TagsBase_menuCommand
 endfunction
 
 
@@ -320,15 +352,27 @@ endfunction
 " Initializes the menu by erasing the old one, creating a new one, and
 " starting it off with a "Rebuild" command
 function! s:InitializeMenu()
-    " first, lets remove the old menu
-    execute "amenu " . s:menu_name . ".subname :echo\\ foo"
-    execute "aunmenu " . s:menu_name
+	" first, lets remove the old menu
+	let b:TagsBase_menuCommand =  "amenu " . s:menu_name . ".subname :echo\\ foo\n"
+	let b:TagsBase_menuCommand = b:TagsBase_menuCommand . "amenu " . s:menu_name . ".subname :echo\\ foo\n"
+	let b:TagsBase_menuCommand = b:TagsBase_menuCommand . "aunmenu " . s:menu_name ."\n"
+	"	and now, add the top of the new menu
+	let b:TagsBase_menuCommand = b:TagsBase_menuCommand .  
+				\"amenu " . s:menu_name . ".&Rebuild\\ Tags\\ Base :call <SID>TagsBase_createMenu()<CR><CR>\n"
+	let b:TagsBase_menuCommand = b:TagsBase_menuCommand .  
+				\"amenu " . s:menu_name . ".&Toggle\\ Title\\ Autocommand :call <SID>TBTitle()<CR><CR>\n"     
+	let b:TagsBase_menuCommand = b:TagsBase_menuCommand .  
+				\"amenu " . s:menu_name . ".-SEP- :\n"
 
-    " and now, add the top of the new menu
-    execute "amenu " . s:menu_name . ".&Rebuild\\ Tags\\ Base :call <SID>TagsBase_createMenu()<CR><CR>"
-    execute "amenu " . s:menu_name . ".&Toggle\\ Title\\ Autocommand :call <SID>TBTitle()<CR><CR>"
-    execute "amenu " . s:menu_name . ".-SEP- :"
+	"	
+	"	execute "amenu " . s:menu_name . ".subname :echo\\ foo"
+	"	execute "aunmenu " . s:menu_name
+	"
+	"	execute "amenu " . s:menu_name . ".&Rebuild\\ Tags\\ Base :call <SID>TagsBase_createMenu()<CR><CR>"
+	"	execute "amenu " . s:menu_name . ".&Toggle\\ Title\\ Autocommand :call <SID>TBTitle()<CR><CR>"
+	"	execute "amenu " . s:menu_name . ".-SEP- :"
 endfunction
+
 
 "this function parses a tag entry and set the appropriate script variable
 "s:name       name of the tag
@@ -336,84 +380,90 @@ endfunction
 "s:expression expression used to find the tag
 "s:line       line where the tag is defined
 function! s:ParseTag(line)
-    let s:name = ""
-    let s:type = ""
-    let s:expression = ""
-    let s:line = ""
-    if a:line[0] == "!"
-        return
-    endif
+	let s:name = ""
+	let s:type = ""
+	let s:expression = ""
+	let s:line = ""
 
-    let s:name = substitute(a:line, g:TagsBase_pattern, g:TagsBase_namePar , '')
-    let s:expression = substitute(a:line, g:TagsBase_pattern, g:TagsBase_exprPar, '')
-    let s:type = substitute(a:line, g:TagsBase_pattern, g:TagsBase_typePar, '')
-    let s:line = substitute(a:line, g:TagsBase_pattern, g:TagsBase_linePar, '')
+	if has('perl')
+		perl ParseTag
+		return
+	endif
 
-    if match( s:expression, "[0-9]" ) == 0
-        " this expression is a line number not a pattern so prepend line number
-        " with : to make it an absolute line command not a relative one
-        let s:expression = ":" . s:expression
-    else
-        let s:expression = ":0" . s:expression
-    endif
+	if a:line[0] == "!"
+		return
+	endif
+
+	let s:name = substitute(a:line, g:TagsBase_pattern, g:TagsBase_namePar , '')
+	let s:expression = substitute(a:line, g:TagsBase_pattern, g:TagsBase_exprPar, '')
+	let s:type = substitute(a:line, g:TagsBase_pattern, g:TagsBase_typePar, '')
+	let s:line = substitute(a:line, g:TagsBase_pattern, g:TagsBase_linePar, '')
+
+	if match( s:expression, "[0-9]" ) == 0
+		" this expression is a line number not a pattern so prepend line number
+		" with : to make it an absolute line command not a relative one
+		let s:expression = ":" . s:expression
+	else
+		let s:expression = ":0" . s:expression
+	endif
 endfunction
 
 " This function takes a string (assumidly a line from a tag file format) and
 " parses out the pertinent information, and makes a tag entry in the tag
 " menu.
 function! s:MakeMenuEntry()
-    "copy other the name since we may need to change it
-    "if the tag is overloaded
-    let name = s:name
-    " is this an overloaded tag?
-    if name == s:previousTag
-        " it is overloaded ... augment the name
-        let s:repeatedTagCount = s:repeatedTagCount + 1
-        let name = name . "\\ (" . s:repeatedTagCount . ")"
-    else
-        let s:repeatedTagCount = 0
-        let s:previousTag = name
-    endif
+	"copy other the name since we may need to change it
+	"if the tag is overloaded
+	let name = s:name
+	" is this an overloaded tag?
+	if name == s:previousTag
+		" it is overloaded ... augment the name
+		let s:repeatedTagCount = s:repeatedTagCount + 1
+		let name = name . "\\ (" . s:repeatedTagCount . ")"
+	else
+		let s:repeatedTagCount = 0
+		let s:previousTag = name
+	endif
 
-    " build the menu command
-    let menu = "amenu " . s:menu_name
-    if g:TagsBase_groupByType
-        let menu = menu . ".&" . s:type
-    endif
-    let menu = menu . ".&" . name
-    if !g:TagsBase_groupByType
-        let menu = menu . "<tab>" . s:type
-    endif
-    let menu = menu . " " . ":call <SID>GoToTag('". s:name . "', " . s:repeatedTagCount . ")<CR><cr>"
-    call s:DebugVariable( "Menu command ", menu )
-    " escape some pesky characters
-    " this is probably not usefull anymore since I doubt there are any
-    " characters to escape in a tagname
-    execute escape( menu, g:TagsBase_escapeChars )
+	" build the menu command
+	let menu = "amenu " . s:menu_name
+	if g:TagsBase_groupByType
+		let menu = menu . ".&" . s:type
+	endif
+	let menu = menu . ".&" . name
+	if !g:TagsBase_groupByType
+		let menu = menu . "<tab>" . s:type
+	endif
+	let menu = menu . " " . ":call <SID>GoToTag('". s:name . "', " . s:repeatedTagCount . ")<CR><cr>\n"
+	call s:DebugVariable( "Menu command ", menu )
+	" escape some pesky characters
+	" this is probably not usefull anymore since I doubt there are any
+	" characters to escape in a tagname
+	let b:TagsBase_menuCommand = b:TagsBase_menuCommand .  menu
 endfunction
 
 " Prints debugging information in the fprintf format of "%s = %s", name, value
 function! s:DebugVariable(name, value)
-    if g:TagsBase_debug
-        echo a:name . " = " . a:value
-    endif
+	if g:TagsBase_debug
+		echo a:name . " = " . a:value
+	endif
 endfunction
 
 " This function builds an array of tag names.  b:lines contains line numbers;
 " b:l<number> is the tag value for the line <number>.
 function! s:MakeTagBaseEntry()
-    let command = "let b:l".s:line. " = '".s:name."'"
-    execute command
-    let index = s:BinarySearch(s:line) + 1
-    let firstpart = strpart(b:lines, 0, s:length*index)
-    let middlepart = strpart(s:line.s:spaces, 0, s:length)
-    let lastpart = strpart(b:lines, s:length*index, strlen(b:lines))
-    let b:lines = firstpart . middlepart . lastpart
+	let command = "let b:l".s:line. " = '".s:name."'"
+	execute command
+	let index = s:BinarySearch(s:line) + 1
+	let firstpart = strpart(b:lines, 0, s:length*index)
+	let middlepart = strpart(s:line.s:spaces, 0, s:length)
+	let lastpart = strpart(b:lines, s:length*index, strlen(b:lines))
+	let b:lines = firstpart . middlepart . lastpart
 endfunction
 
 " This function returns the tag line for given index in the b:lines array.
 function! s:GetLine(i)
-    return strpart(b:lines, a:i*s:length, s:length)+0
+	return strpart(b:lines, a:i*s:length, s:length)+0
 endfunction
 
 " This function does binary search in the array of tag names and returns
@@ -422,66 +472,71 @@ endfunction
 " s:GetTagName)
 " and to keep the b:lines array sorted as it is being built
 function! s:BinarySearch(curline)
-    if !exists("b:lines") || match(b:lines, "^\s*9999999") != -1
-        return -1
-    endif
+	if !exists("b:lines") || match(b:lines, "^\s*9999999") != -1
+		return -1
+	endif
 
-    if b:lines == ""
-        return 0
-    endif
+	if b:lines == ""
+		return 0
+	endif
 
-    let left = 0
-    let right = strlen(b:lines)/s:length
+	let left = 0
+	let right = strlen(b:lines)/s:length
 
-    if a:curline < s:GetLine(left)
-        return -1
-    endif
+	if a:curline < s:GetLine(left)
+		return -1
+	endif
 
-    while left<right
-        let middle = (right+left+1)/2
-        let middleline = s:GetLine(middle)
+	while left<right
+		let middle = (right+left+1)/2
+		let middleline = s:GetLine(middle)
 
-        if middleline == a:curline
-            let left = middle
-            break
-        endif
+		if middleline == a:curline
+			let left = middle
+			break
+		endif
 
-        if middleline > a:curline
-            let right = middle-1
-        else
-            let left = middle
-        endif
-    endwhile
-    return left
+		if middleline > a:curline
+			let right = middle-1
+		else
+			let left = middle
+		endif
+	endwhile
+	return left
 endfunction
 
 "retrieves the name of the last tag defined for a given line
 function! s:GetTagName(curline)
-    let index = s:BinarySearch(a:curline)
-    if index == -1
-        return ""
-    endif
-    exe "let ret=b:l".s:GetLine(index)
-    return ret
+	let index = s:BinarySearch(a:curline)
+	if index == -1
+		return ""
+	endif
+	let line = s:GetLine(index)
+	exe "let valide = exists('b:l". line . "')"
+	let ret = "****************"
+	if valide
+		exe "let ret=b:l".s:GetLine(index)
+	endif
+	return ret
 endfunction
 
 "goes to the first tag by this name
 function! s:SimpleGoToTag(iTag)
-    call s:GoToTag(a:iTag, 0)
+	call s:GoToTag(a:iTag, 0)
 endfunction
 
 "uses vim tags facility to jump to a tag and push the tag to the tag stack.
 "restores the value of tags afterward
 function! s:GoToTag(iTag, iIndex)
-    let oldTag = &tags
-    let &tags=b:fileName
-    silent execute "ta " . a:iTag
-    let index = a:iIndex
-    while index > 0
-        let index = index -1
-        silent tn
-    endwhile
-    let &tags=oldTag
+	let oldTag = &tags
+	let &tags=b:fileName
+	silent execute "ta " . a:iTag
+	let index = a:iIndex
+	while index > 0
+		let index = index -1
+		silent tn
+	endwhile
+	let &tags=oldTag
 endfunction
 
 

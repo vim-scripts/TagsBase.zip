@@ -2,10 +2,10 @@
 1. Description
 Tags Base is the result of the merge and enhancements of the scripts:
  *TagsMenu (http://members.home.net/jayglanville/tagsmenu/TagsMenu.html) script
- 		    Jay Dickon Glanville  dickon@nortelnetworks.com
+            Jay Dickon Glanville  dickon@nortelnetworks.com
 
  *ctags.vim (http://vim.sourceforge.net/scripts/script.php?script_id=12) script
- 			Alexey Marinichev   lyosha@lyosha.2y.net
+            Alexey Marinichev   lyosha@lyosha.2y.net
  see |TagsBase-Credits|
 
 Tags Base automatically uses |ctags| to generate a |tag| file for the currently
@@ -13,10 +13,10 @@ edited file, refreshes it if the file is newer than the tags file and uses it
 to provide a set of advanced feature to vim.
 
 Beware that this means that some tag files are left behind on your computer,
-	they may end up in the same directory as your files or in a temporary
-	directory depending on the rights.  I'll try to soon offer you an options
-	to have them cleaned up when vim exits.  Right now you can specify the
-	prefixe and suffix used to compute them.
+    they may end up in the same directory as your files or in a temporary
+    directory depending on the rights.  I'll try to soon offer you an options
+    to have them cleaned up when vim exits.  Right now you can specify the
+    prefixe and suffix used to compute them.
 
 Right now the feature provided are:
     *Detection of the currently edited function (or more precisely of the last
@@ -39,16 +39,16 @@ Right now the feature provided are:
     programmer using vim.
 
 Note 1: if you do not have version 5.0 of ctags, I recommend that you upgrade,
-		it may work (with some fiddling with the |TagsBase-Parsing|
-		options) but it is not tested.
+        it may work (with some fiddling with the |TagsBase-Parsing|
+        options) but it is not tested.
 
 Note 2: the requirement is for Exuberant ctags. This satisfies the requirements
-		of the level two information on line number and tags type.
-		Other ctags program may provide it but you'll need to tweak the
-		parsing regexps see |TagsBase-Parsing|
+        of the level two information on line number and tags type.
+        Other ctags program may provide it but you'll need to tweak the
+        parsing regexps see |TagsBase-Parsing|
 
 ===============================================================================
-*TagsBase-Options*					*TagsBase-Customization*
+*TagsBase-Options*                  *TagsBase-Customization*
 3. Customization
 
 There are several global variables that users can use to change the scripts
@@ -103,35 +103,41 @@ are used in conjunction to produce and parse tags of this format.
 
 *TagsBase-ChangeLog*
 
+[06-Oct-2001] 0.6.1 (vim 6.0)    "Uses the BufEnter autocmd to refresh the menu,
+                                this makes the menu work with split windows.
+                                Keeps the menu generating command in a buffer
+                                variable to avoid the extra work of reparsing if
+                                it is not needed.  Uses the perl interpreter if 
+                                available to speed up the tags parsing"
 [02-Oct-2001] 0.6 (vim 6.0)    "avoids opening a buffer on the tags file,
-								optionnally destroy the created tags files,
-								changed the name of the g:CatProg variable to
-								g:TagsBase_CatProg."
+                                optionnally destroy the created tags files,
+                                changed the name of the g:CatProg variable to
+                                g:TagsBase_CatProg."
 [02-Oct-2001] 0.5.3 (vim 6.0)  "added new options to select the name of the tags
-								files. Removed the html files. Changed the
-								license to public domain added the
-								|TagsBase-ChangeLog| and the |TagsBase-Credits|
-								section to the help. Added a warning about the
-								existence of the tags files"
+                                files. Removed the html files. Changed the
+                                license to public domain added the
+                                |TagsBase-ChangeLog| and the |TagsBase-Credits|
+                                section to the help. Added a warning about the
+                                existence of the tags files"
 [02-Oct-2001] 0.5.2 (vim 6.0)  "bug fixes in the sorting of the lines array"
 [02-Oct-2001] 0.5.1 (vim 6.0)  "bug correction
 [02-Oct-2001] 0.5 (vim 6.0)    "Added help, made customization easier, packaged
-								into a zip file.
-								To install unpack in a directory in your
-								runtimepath (see :help runtimepath) and run
-								:helptags $dirUnpacked/doc
-								"
-[02-Oct-2001] 0.4 (vim 6.0) 	"reorganized and commented the script, support
-								for the builtin tags stack, support for
-								ordered tag file generation, some bugs
-								corrected."
-[01-Oct-2001] 0.3 (vim 6.0) 	"added a menu entry to toggle on and off the
-								title string functionality"
-[01-Oct-2001] 0.2 (vim 6.0) 	"Corrected dependency on a $TMP variable
-								corrected bug when on an M$ system the shell
-								used was a unix type shell, this generated
-								problems due to the shell misinterpreting the
-								'' in a path.
+                                into a zip file.
+                                To install unpack in a directory in your
+                                runtimepath (see :help runtimepath) and run
+                                :helptags $dirUnpacked/doc
+                                "
+[02-Oct-2001] 0.4 (vim 6.0)     "reorganized and commented the script, support
+                                for the builtin tags stack, support for
+                                ordered tag file generation, some bugs
+                                corrected."
+[01-Oct-2001] 0.3 (vim 6.0)     "added a menu entry to toggle on and off the
+                                title string functionality"
+[01-Oct-2001] 0.2 (vim 6.0)     "Corrected dependency on a $TMP variable
+                                corrected bug when on an M$ system the shell
+                                used was a unix type shell, this generated
+                                problems due to the shell misinterpreting the
+                                '' in a path.
 
 If you find any other bugs, please report it by mail to me (benoit.cerrina@writeme.com"
 
