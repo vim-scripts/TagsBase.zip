@@ -1,9 +1,0 @@
-!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
-!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted/
-!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/darren@hiebert.com/
-!_TAG_PROGRAM_NAME	Exuberant Ctags	//
-!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
-!_TAG_PROGRAM_VERSION	5.0	//
-TagsBase_GetTagName	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! TagsBase_GetTagName(curline)$/;"	function	line:521
-TagsBase_GetTagType	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! TagsBase_GetTagType(curline)$/;"	function	line:545
-TagsBase_GoToTag	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! TagsBase_GoToTag(iTag, iIndex)$/;"	function	line:574

@@ -127,6 +127,7 @@ $typePar=VIM::Eval('g:TagsBase_typePar');
 $namePar=VIM::Eval('g:TagsBase_namePar');
 $linePar=VIM::Eval('g:TagsBase_linePar');
 $maxMenuSize = VIM::Eval('g:TagsBase_MaxMenuSize');
+$maxMenuSize = 26 if ($maxMenuSize > 26 || $maxMenuSize <1);
 sub logFloorMenu
 {
 	my $n = shift;
@@ -135,14 +136,17 @@ sub logFloorMenu
 }
 
 
-
 sub ComputeMenu
 {
-	my $depth = logFloorMenu($#{$curSubMenuRef});
-	my $width = $maxMenuSize ** $depth;
-	VIM::Msg("depth $depth, width $width");
+	#my $depth = logFloorMenu($#{$curSubMenuRef});
+	#my $width = $maxMenuSize ** $depth;
+	my $width = int(@{$curSubMenuRef} / $maxMenuSize)+1;
+	#VIM::Msg("width $width");
+	my $shortType = shift;
 	if ($width == 1)
 	{
+		my $short = 'a';
+		my $priority = 1;
 		for (@$curSubMenuRef)
 		{
 			($prevName, $repeatcount) = @{$_};
@@ -151,39 +155,42 @@ sub ComputeMenu
 			$name =~ s/\./\\\\./g;	#for things like packages in java
 			if ($localMenuName)
 			{
-				$menuCommand .= "\\namenu <silent> $localMenuName.$name" if ($groupByType);
-				$menuCommand .= "\\namenu <silent> $localMenuName.$name<tab>$type" unless ($groupByType);
+				$menuCommand .= "\\namenu <silent> $localPriority $localMenuName.$name<tab>&$short" if ($groupByType);
+				$menuCommand .= "\\namenu <silent> $localPriority $localMenuName.$name<tab> $type &$short" unless ($groupByType);
 			}
 			else
 			{
-				$menuCommand .= "\\namenu <silent> $menuName.&$type.$name" if ($groupByType);
-				$menuCommand .= "\\namenu <silent> $menuName.$name<tab>$type" unless ($groupByType);
+				$menuCommand .= "\\namenu <silent> $menuName.$type<tab>&$shortType.$name<tab>&$short" if ($groupByType);
+				$menuCommand .= "\\namenu <silent> $menuName.$name<tab> $type &$short" unless ($groupByType);
 			}
 			$menuCommand .=" :call TagsBase_GoToTag('$prevName', $repeatcount)<cr>";
+			$short = chr(ord($short) + 1);
 		}
 	}
 	else
 	{
 		#we need a submenu
 		#VIM::Msg "Submenu case for $type";
-		for(my $i = 0; $i <= $#{$curSubMenuRef}; $i+= ($width))
+		my $short = 'a';
+		for(my $curStart = 0; $curStart <= $#{$curSubMenuRef}; $curStart+= ($width))
 		{
-			$curMax = $i + $width -1;
+			$curMax = $curStart + $width -1;
 			$curMax = $#{$curSubMenuRef} if($curMax > $#{$curSubMenuRef});
 			my $dummy;		#will hold unused repeatCount
-			($prevNameSmall, $dummy) = @{@{$curSubMenuRef}[$i]};
+			($prevNameSmall, $dummy) = @{@{$curSubMenuRef}[$curStart]};
 			($prevNameBig, $dummy) = @{@{$curSubMenuRef}[$curMax]};
 			if ($localMenuName)
 			{
-				$curMenuName = "$localMenuName.$prevNameSmall--$prevNameBig";
+				$curMenuName = "$localPriority $localMenuName.$prevNameSmall--$prevNameBig<tab>&$short";
 			}
 			else
 			{
-				$curMenuName = "$menuName.&$type.$prevNameSmall--$prevNameBig" if ($groupByType);
-				$curMenuName = "$menuName.$prevNameSmall--$prevNameBig" unless ($groupByType);
+				$curMenuName = "..$curStart $menuName.$type<tab>&$shortType.$prevNameSmall--$prevNameBig<tab>&$short" if ($groupByType);
+				$curMenuName = ".$curStart $menuName.$prevNameSmall--$prevNameBig<tab>&$short" unless ($groupByType);
 			}				
 			$menuCommand .= "\\namenu <silent> $curMenuName";
-			$menuCommand .=" :perl TagsBase::BuildBase('$curMenuName', '$type',$i, $curMax)<cr><cr>";
+			$menuCommand .=" :perl TagsBase::BuildBase('$curMenuName', '$type',$curStart, $curMax, $curPriority)<cr>";
+			$short = chr(ord($short) + 1);
 		}
 	}
 }
@@ -281,10 +288,11 @@ sub BuildBase
 	local $localType;
 	local $start;
 	local $end;
-	($localMenuName, $localType, $start, $end) = @_;	
+	local $localPriority;
+	($localMenuName, $localType, $start, $end, $localPriority) = @_;	
 	#VIM::Msg "args " . join(", ", @_);
 	my $file = VIM::Eval("b:fileName");
-	VIM::Msg "file $file";
+	#VIM::Msg "file $file";
 	$Gbase->initBase unless $localMenuName;
 	parseTags($file);
 	
@@ -293,22 +301,30 @@ sub BuildBase
 	#compute menus
 	local $curMax;
 	ComputeMenu unless ($groupByType);
+	my $short = 'a';
 	while (($type, $curSubMenuRef) = each %menu) 
 	{
 		#additional menu depth
 		next if ($localType && $type ne $localType);
-		ComputeMenu;
+		ComputeMenu $short;
+		$short = chr(ord($short) + 1);
 
 	}
 
 
 	$time = time() -$startTime;
-	VIM::Msg ("Time before Vim menu command $time");
+	#VIM::Msg ("Time before Vim menu command $time");
 	#VIM::Msg("menu command $menuCommand");
 	if ($localMenuName)
 	{
+		#compute the command to open the menu
+		my $path = 'simalt '.join('|simalt ', $localMenuName =~ /&([a-zA-Z])/go);
 		#when the menu command is local do not add it to the global command
-		$menuCommand = qq!aunmenu $localMenuName | exec "$menuCommand" | popup $localMenuName!;
+		$menuCommand =~ s/\t/<tab>/go;
+		$localMenuName =~ s/\t/<tab>/go;
+	#	$menuCommand = qq!aunmenu $localMenuName | exec "$menuCommand" | popup $localMenuName!;
+		$menuCommand = qq!aunmenu $localMenuName | exec "$menuCommand" | $path!;
+		#VIM::Msg $menuCommand
 	}
 	else
 	{	
@@ -326,7 +342,7 @@ sub BuildBase
 	$Gbase->sortBase unless $localMenuName;
 	#	VIM::Msg "blines" . join ", " , @blines;
 	$time = time() - $startTime;
-	VIM::Msg ("Total Time in perl $time");
+	#VIM::Msg ("Total Time in perl $time");
 	#VIM::Msg $localMenuName if ($localMenuName);
 }
 
@@ -345,10 +361,9 @@ sub GetTag
 sub GetTagType
 {
 	my $line = shift;
-	return "" if $line;
 	my $elem = $Gbase->getTag($line);
-	VIM::DoCommand "let retVal = ". $elem->[2];
-	return $elem->Type;			#for debugging
+	VIM::DoCommand "let retVal = '". $elem->[2]."'";
+	return $elem->[2];			#for debugging
 }
 
 
@@ -359,14 +374,13 @@ sub GetTagType
 sub GetTagName
 {
 	my $line = shift;
-	return "" if $line;
 	my $elem = $Gbase->getTag($line);
-	VIM::DoCommand "let retVal = " . $elem->[1];
-	return $elem->Name;			#for debugging
+	VIM::DoCommand "let retVal = '" . $elem->[1]."'";
+	return $elem->[1];			#for debugging
 }
-
 
 BuildBase;
 my @blines = $Gbase->getBase;
 GetTagType( $blines[3][0] +1);
 GetTagName( $blines[3][0] + 10);
+1;

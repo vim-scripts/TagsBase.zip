@@ -5,8 +5,8 @@
 " and the ctags.vim script from Alexey Marinichev <lyosha@lyosha.2y.net>
 " Last Modified: 1 Octobre 2001
 " Maintainer: Benoit Cerrina, <benoit.cerrina@writeme.com>
-" Location: http://vim.sourceforge.net/scripts/script.php?script_id=100
-" Version: 0.8
+" Location: http://benoitcerrina.dnsalias.org/vim/TagsBase.html.
+" Version: 0.8.3
 " See the accompaning documentation file for information on purpose,
 " installation, requirements and available options.
 " License: this is in the public domain.

@@ -58,7 +58,6 @@ or in the command line.
 | variable:             |default value:         |description:                  |
 +-----------------------+-----------------------+------------------------------+
 |g:TagsBase_groupByType |1 (true)               |group tags in the menu        |
-|g:TagsBase_debug       |0 (false)              |output debug messages         |
 |g:TagsBase_CatProg     |cat or type            |program to read a file        |
 |g:TagsBase_rmProg      |rm or del              |program to delete a file      |
 |g:TagsBase_ACMode      |2                      |Autocommand settings 0=None   |
@@ -116,6 +115,28 @@ a certain key)
 
 
 *TagsBase-ChangeLog*
+[25-Oct-2001] 0.8.3 (vim 6.0) "enhanced cascading menus for win32. Do not 
+                                use the popup anymore but really opens the
+                                menu"
+[21-Oct-2001] 0.8.2 (vim 6.0) "bugfix removed some stray timing statements 
+                                from the perl scripts" 
+[20-Oct-2001] 0.8.1 (vim 6.0) "small correction for bug resulting in error 
+                                        message: 
+                                 Uncaught exception from user code: 
+                                ^ICan't call method "Type" on unblessed 
+                                        reference at perl/TagsBase.vim line 376. 
+                                ^ITagsBase::GetTagType(391) called at 
+                                        (eval 14) line 1 
+                                ^Ieval 'TagsBase::GetTagType 391 
+                                ;' called at (eval 14) line 0 
+                                Uncaught exception from user code: 
+                                ^ICan't call method "Name" on unblessed 
+                                        reference at perl/TagsBase.vim line 389. 
+                                ^ITagsBase::GetTagName(391) called at 
+                                        (eval 15) line 1 
+                                ^Ieval 'TagsBase::GetTagName 391 
+                                " 
+
 [17-Oct-2001] 0.8  (vim 6.0)  "Greatly improved the speed when perl is
                                 available.  Now almost everything happens in
                                 the perl interpreter.
