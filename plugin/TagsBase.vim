@@ -6,7 +6,7 @@
 " Last Modified: 1 Octobre 2001
 " Maintainer: Benoit Cerrina, <benoit.cerrina@writeme.com>
 " Location: http://benoitcerrina.dnsalias.org/vim/TagsBase.html.
-" Version: 0.5
+" Version: 0.5.2
 " See the accompaning documentation file for information on purpose,
 " installation, requirements and available options.
 
@@ -320,7 +320,7 @@ endfunction
 function! s:MakeTagBaseEntry()
     let command = "let b:l".s:line. " = '".s:name."'"
     execute command
-    let index = s:BinarySearch(s:line)
+    let index = s:BinarySearch(s:line) + 1
     let firstpart = strpart(b:lines, 0, s:length*index)
     let middlepart = strpart(s:line.s:spaces, 0, s:length)
     let lastpart = strpart(b:lines, s:length*index, strlen(b:lines))
@@ -350,7 +350,7 @@ function! s:BinarySearch(curline)
     let right = strlen(b:lines)/s:length
 
     if a:curline < s:GetLine(left)
-        return ""
+        return -1
     endif
 
     while left<right
