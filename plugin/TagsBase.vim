@@ -32,7 +32,8 @@ endfunction
 " use this command
 command! TagsBaseTitle call <SID>TBTitle()
 command! -nargs=1 -complete=tag TagsBaseTag :call <SID>SimpleGoToTag('<args>')
-command! TagsBaseRebuild :call <SID>TagsBase_createMenu()
+command! TagsBaseRebuild :call <SID>TagsBase_Rebuild()
+"command! TagsBaseCleanUp :call <SID>CleanupStuff()
 
 " ------------------------------------------------------------------------
 " AUTO COMMANDS: things to kick start the script
@@ -183,12 +184,12 @@ call s:TestProg("g:TagsBase_rmProg", 'rm', 'del', 'delete a file')
 
 " This function is called everytime a filetype is set.  All it does is
 " check the filetype setting, and if it is one of the filetypes recognized
-" by ctags, then the TagsBase_createMenu() function is called.  However, the
-" g:TagsBase_ACMode == FALSE can veto the auto execution.
+" by ctags, then the TagsBase_Rebuild() function is called.  However, the
+" g:TagsBase_ACMode <= can veto the auto execution.
 "
 function! s:TitleHandler()
 	if exists('b:lines') &&  exists("s:titleOn") && s:titleOn && g:TagsBase_ACMode > 1
-		let &titlestring= g:TagsBase_TitlePrefix . <SID>GetTagName(line("."))
+		let &titlestring= g:TagsBase_TitlePrefix . TagsBase_GetTagName(line("."))
 	endif
 endfunction
 
@@ -231,21 +232,23 @@ function! s:TagsBase_checkFileType()
 	" sorry about the bad form of this if statement, but apparently, the
 	" expression needs to be terminated by an EOL. (I could use if/elseif...)
 	if  (&ft == "asm") || (&ft == "awk") || (&ft == "c") || (&ft == "cpp") || (&ft == "sh") || (&ft == "cobol") || (&ft == "eiffel") || (&ft == "fortran") || (&ft == "java") || (&ft == "lisp") || (&ft == "make") || (&ft == "pascal") || (&ft == "perl") || (&ft == "php") || (&ft == "python") || (&ft == "rexx") || (&ft == "ruby") || (&ft == "scheme") || (&ft == "tcl") || (&ft == "vim") || (&ft == "cxx")
-		call s:TagsBase_createMenu()
+		call s:TagsBase_Rebuild()
 	endif
 endfunction
 
+function! s:AddFileArg(iCommand, iFileArg)
+	return a:iCommand . ' "' . a:iFileArg . '"'
+endfunction
 " Clean up the files if required
 function! s:CleanupStuff()
 	"delete all files in s:ToDel list
 	while strlen(s:ToDel) > 0
-		let currentFile = strpart(s:ToDel, 0, stridx(s:ToDel, "\n"))
-		exe "let loc = s:f_".currentFile
-		if loc <= g:TagsBase_CleanUp
-			let lCommand = g:TagsBase_rmProg . " " . currentFile
-			let lCommand = substitute(lCommand, '[/\\]', s:slash, 'g')
-			call system(lCommand)
-		endif
+		let delimidx = stridx(s:ToDel, "\n")
+		let currentFile = strpart(s:ToDel, 0, delimidx)
+		let lCommand = s:AddFileArg(g:TagsBase_rmProg, currentFile)
+		let lCommand = substitute(lCommand, '[/\\]', s:slash, 'g')
+		call system(lCommand)
+		let s:ToDel = strpart(s:ToDel, delimidx+1)
 	endwhile
 endfunction
 
@@ -256,10 +259,7 @@ function! s:SetFileName(iName, iMode)
 	let b:fileName = a:iName
 	if g:TagsBase_CleanUp >= a:iMode
 		"use the variable script dictionary as a hashtable
-		if !exists("s:f_" . b:fileName)
-			exe "let s:f_" . b:fileName . " = " . a:iMode
-			let s:ToDel = s:ToDel . b:fileName . "\n"
-		endif
+		let s:ToDel = s:ToDel . b:fileName . "\n"
 	endif
 endfunction
 
@@ -269,8 +269,8 @@ endfunction
 function! s:CreateFile()
 	"build file name"
 	if !exists("b:fileName") || b:fileName == ""
-		let dir= fnamemodify(bufname("%"),":p:h")
-		let name = fnamemodify(bufname("%"), ":t")
+		let dir= fnamemodify(@%,":p:h")
+		let name = fnamemodify(@%, ":t")
 		let b:fileName = dir . "/" . g:TagsBase_prefix . name . g:TagsBase_sufix
 		if !filewritable(b:fileName) && !filewritable(dir)
 			let b:fileName = s:tempDir . "/" . g:TagsBase_prefix . name . g:TagsBase_sufix
@@ -281,7 +281,8 @@ function! s:CreateFile()
 	endif
 	" execute the ctags command on the current file
 	if !filereadable(b:fileName) || getftime(b:fileName) < getftime(@%) || g:TagsBase_debug
-		let lCommand = g:TagsBase_ctagsCommand . b:fileName . " " . fnamemodify(bufname("%"), ":p")
+		let lCommand = s:AddFileArg(g:TagsBase_ctagsCommand . ' ', b:fileName)
+		let lCommand = s:AddFileArg(lCommand . ' ', fnamemodify(bufname("%"), ":p"))
 		let lCommand = substitute(lCommand, '[/\\]', s:slash, 'g')
 		call s:DebugVariable( "lCommand", lCommand )
 		"vim uses the relative path relative to the path of the tag file while
@@ -304,7 +305,7 @@ endfunction
 
 " This is the function that actually calls ctags, parses the output, and
 " creates the menus.
-function! s:TagsBase_createMenu()
+function! s:TagsBase_Rebuild()
 
 	let start = localtime()
 	
@@ -319,7 +320,7 @@ function! s:TagsBase_createMenu()
 		return
 	endif
 	"read the file in a variable
-	let command = g:TagsBase_CatProg.' '.b:fileName
+	let command = s:AddFileArg(g:TagsBase_CatProg.' ', b:fileName)
 	let command = substitute(command, '[/\\]', s:slash, 'g')
 
 	call s:DebugVariable("command", command)
@@ -343,6 +344,7 @@ function! s:TagsBase_createMenu()
 		let ctags = strpart(ctags, delimIdx+1)
 	endwhile
 	let time = localtime() - start
+	echo "tags built in " . time
 	let b:lines = b:lines."9999999"
 	execute b:TagsBase_menuCommand
 endfunction
@@ -358,7 +360,7 @@ function! s:InitializeMenu()
 	let b:TagsBase_menuCommand = b:TagsBase_menuCommand . "aunmenu " . s:menu_name ."\n"
 	"	and now, add the top of the new menu
 	let b:TagsBase_menuCommand = b:TagsBase_menuCommand .  
-				\"amenu " . s:menu_name . ".&Rebuild\\ Tags\\ Base :call <SID>TagsBase_createMenu()<CR><CR>\n"
+				\"amenu " . s:menu_name . ".&Rebuild\\ Tags\\ Base :call <SID>TagsBase_Rebuild()<CR><CR>\n"
 	let b:TagsBase_menuCommand = b:TagsBase_menuCommand .  
 				\"amenu " . s:menu_name . ".&Toggle\\ Title\\ Autocommand :call <SID>TBTitle()<CR><CR>\n"     
 	let b:TagsBase_menuCommand = b:TagsBase_menuCommand .  
@@ -368,7 +370,7 @@ function! s:InitializeMenu()
 	"	execute "amenu " . s:menu_name . ".subname :echo\\ foo"
 	"	execute "aunmenu " . s:menu_name
 	"
-	"	execute "amenu " . s:menu_name . ".&Rebuild\\ Tags\\ Base :call <SID>TagsBase_createMenu()<CR><CR>"
+	"	execute "amenu " . s:menu_name . ".&Rebuild\\ Tags\\ Base :call <SID>TagsBase_Rebuild()<CR><CR>"
 	"	execute "amenu " . s:menu_name . ".&Toggle\\ Title\\ Autocommand :call <SID>TBTitle()<CR><CR>"
 	"	execute "amenu " . s:menu_name . ".-SEP- :"
 endfunction
@@ -469,7 +471,7 @@ endfunction
 " This function does binary search in the array of tag names and returns
 " the index of the corresponding line or the one immediately inferior.
 " it is used to retrieve the tag name corresponding to a given line (cf
-" s:GetTagName)
+" TagsBase_GetTagName)
 " and to keep the b:lines array sorted as it is being built
 function! s:BinarySearch(curline)
 	if !exists("b:lines") || match(b:lines, "^\s*9999999") != -1
@@ -506,8 +508,13 @@ function! s:BinarySearch(curline)
 endfunction
 
 "retrieves the name of the last tag defined for a given line
-function! s:GetTagName(curline)
-	let index = s:BinarySearch(a:curline)
+function! TagsBase_GetTagName(curline)
+	if a:curline !~ '\d\+'
+		let line = line(a:curline)
+	else 
+		let line = a:curline
+	endif
+	let index = s:BinarySearch(line)
 	if index == -1
 		return ""
 	endif
@@ -529,7 +536,7 @@ endfunction
 "restores the value of tags afterward
 function! s:GoToTag(iTag, iIndex)
 	let oldTag = &tags
-	let &tags=b:fileName
+	let &tags=escape (b:fileName, ' ')
 	silent execute "ta " . a:iTag
 	let index = a:iIndex
 	while index > 0
