@@ -168,7 +168,7 @@ sub ComputeMenu
 {
 	my $depth = logFloorMenu($#{$curSubMenuRef});
 	my $width = $maxMenuSize ** $depth;
-	VIM::Msg("depth $depth, width $width");
+	#VIM::Msg("depth $depth, width $width");
 	if ($width == 1)
 	{
 		for (@$curSubMenuRef)
@@ -312,7 +312,7 @@ sub BuildBase
 	($localMenuName, $localType, $start, $end) = @_;	
 	#VIM::Msg "args " . join(", ", @_);
 	my $file = VIM::Eval("b:fileName");
-	VIM::Msg "file $file";
+	#VIM::Msg "file $file";
 	$Gbase->initBase unless $localMenuName;
 	parseTags($file);
 	
@@ -331,7 +331,7 @@ sub BuildBase
 
 
 	$time = time() -$startTime;
-	VIM::Msg ("Time before Vim menu command $time");
+	#VIM::Msg ("Time before Vim menu command $time");
 	#VIM::Msg("menu command $menuCommand");
 	if ($localMenuName)
 	{
@@ -354,7 +354,7 @@ sub BuildBase
 	$Gbase->sortBase unless $localMenuName;
 	#	VIM::Msg "blines" . join ", " , @blines;
 	$time = time() - $startTime;
-	VIM::Msg ("Total Time in perl $time");
+	#VIM::Msg ("Total Time in perl $time");
 	#VIM::Msg $localMenuName if ($localMenuName);
 }
 
