@@ -31,7 +31,7 @@ endfunction
 " to gain access to the name of the current tag in the title string
 " use this command
 command! TagsBaseTitle call <SID>TBTitle()
-command! -nargs=1 -complete=tag TagsBaseTag :call <SID>GoToTag('<args>')
+command! -nargs=1 -complete=tag TagsBaseTag :call <SID>SimpleGoToTag('<args>')
 command! TagsBaseRebuild :call <SID>TagsBase_createMenu()
 
 " ------------------------------------------------------------------------
@@ -174,10 +174,18 @@ function! s:CreateFile()
     endif
     " execute the ctags command on the current file
     if !filereadable(b:fileName) || getftime(b:fileName) < getftime(@%) || g:TagsBase_debug
-        let lCommand = g:TagsBase_ctagsCommand . b:fileName . " " . expand("%")
+        let lCommand = g:TagsBase_ctagsCommand . b:fileName . " " . fnamemodify(bufname("%"), ":p")
         let lCommand = substitute(lCommand, '[/\\]', s:slash, 'g')
         call s:DebugVariable( "lCommand", lCommand )
+        "vim uses the relative path relative to the path of the tag file while
+        "ctags relative to the path when running ctags, therefore we need to
+        "change the directory
+        let dir=fnamemodify(b:fileName , ":p:h")
+        let olddir=getcwd()
+        silent execute "cd " . dir
         call system( lCommand )
+        silent execute "cd " . olddir
+        
         let fileName = b:fileName   "local variable because we'll switch buffer
         
         silent execute "badd " . fileName
@@ -292,7 +300,7 @@ function! s:MakeMenuEntry()
     if !g:TagsBase_groupByType
         let menu = menu . "<tab>" . s:type
     endif
-    let menu = menu . " " . ":call <SID>GoToTag('". name . "')<CR>" 
+    let menu = menu . " " . ":call <SID>GoToTag('". s:name . "', " . s:repeatedTagCount . ")<CR><cr>" 
     call s:DebugVariable( "Menu command ", menu )
     " escape some pesky characters
     " this is probably not usefull anymore since I doubt there are any
@@ -373,12 +381,22 @@ function! s:GetTagName(curline)
     return ret
 endfunction
 
+"goes to the first tag by this name
+function! s:SimpleGoToTag(iTag)
+    call s:GoToTag(a:iTag, 0)
+endfunction
+
 "uses vim tags facility to jump to a tag and push the tag to the tag stack.
 "restores the value of tags afterward
-function s:GoToTag(iTag)
+function! s:GoToTag(iTag, iIndex)
     let oldTag = &tags
     let &tags=b:fileName
-    execute "ta " . a:iTag
+    silent execute "ta " . a:iTag
+    let index = a:iIndex
+    while index > 0
+        let index = index -1
+        silent tn
+    endwhile
     let &tags=oldTag
 endfunction
 
