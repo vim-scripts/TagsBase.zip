@@ -10,9 +10,10 @@ sub VIM::Eval
 	{
 		  return '^(?!!)([^\t]*)\t[^\t]*\t(.*);"\t([^\t]*)\tline:(\d*).*$' if (/g:TagsBase_pattern/);
 		  return $ARGV[0] if (/b:fileName/);
-		  return '$3' if (/g:TagsBase_typePar/);
 		  return '$1' if (/g:TagsBase_namePar/);
-		  return '$4' if (/g:TagsBase_linePar/);
+		  return '$2' if (/g:TagsBase_filePar/);
+		  return '$4' if (/g:TagsBase_typePar/);
+		  return '$5' if (/g:TagsBase_linePar/);
 		  return 'Ta&gs' if (/g:TagsBase_menuName/);
 		  return $ARGV[1] if (/g:TagsBase_groupByType/);
 		  return 40 if (/g:TagsBase_MaxMenuSize/);

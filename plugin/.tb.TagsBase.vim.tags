@@ -1,0 +1,38 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/darren@hiebert.com/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.1	//
+AddFileArg	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:AddFileArg(iCommand, iFileArg)$/;"	function	line:234
+BinarySearch	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:BinarySearch(curline)$/;"	function	line:490
+CleanupStuff	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:CleanupStuff()$/;"	function	line:238
+CreateFile	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:CreateFile(tmp)$/;"	function	line:269
+GetLine	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:GetLine(i)$/;"	function	line:468
+GetTagLine	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:GetTagLine(curline)$/;"	function	line:524
+InitializeMenu	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:InitializeMenu()$/;"	function	line:371
+MakeMenuEntry	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:MakeMenuEntry()$/;"	function	line:423
+MakeTagBaseEntry	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:MakeTagBaseEntry()$/;"	function	line:455
+ParseTag	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:ParseTag(line)$/;"	function	line:396
+SetFileName	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:SetFileName(iName, iMode)$/;"	function	line:256
+SimpleGoToTag	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:SimpleGoToTag(iTag)$/;"	function	line:581
+TBTitle	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:TBTitle()$/;"	function	line:192
+TagWindow	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:TagWindow()$/;"	function	line:599
+TagsBaseBufGotoTag	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! TagsBaseBufGotoTag()$/;"	function	line:624
+TagsBaseSet	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:TagsBaseSet(varname, varvalue)$/;"	function	line:21
+TagsBase_DumpTags	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:TagsBase_DumpTags()$/;"	function	line:473
+TagsBase_GetTagName	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! TagsBase_GetTagName(curline)$/;"	function	line:534
+TagsBase_GetTagType	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! TagsBase_GetTagType(curline)$/;"	function	line:558
+TagsBase_GoToTag	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! TagsBase_GoToTag(iTag, iIndex)$/;"	function	line:587
+TagsBase_Rebuild	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:TagsBase_Rebuild()$/;"	function	line:313
+TagsBase_checkFileType	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:TagsBase_checkFileType()$/;"	function	line:223
+TestProg	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:TestProg(var, unix, ms, msg)$/;"	function	line:153
+TitleHandler	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:TitleHandler()$/;"	function	line:186
+ToDel	C:\tmp\vimfiles\plugin\TagsBase.vim	/^let s:ToDel = ''$/;"	variable	line:131
+UpdateTagBuffer	C:\tmp\vimfiles\plugin\TagsBase.vim	/^function! s:UpdateTagBuffer(bufnr)$/;"	function	line:611
+length	C:\tmp\vimfiles\plugin\TagsBase.vim	/^let s:length = 8$/;"	variable	line:127
+loaded_TagsBase	C:\tmp\vimfiles\plugin\TagsBase.vim	/^let loaded_TagsBase = 1$/;"	variable	line:18
+previousTag	C:\tmp\vimfiles\plugin\TagsBase.vim	/^let s:previousTag = ""$/;"	variable	line:122
+repeatedTagCount	C:\tmp\vimfiles\plugin\TagsBase.vim	/^let s:repeatedTagCount = 0$/;"	variable	line:124
+spaces	C:\tmp\vimfiles\plugin\TagsBase.vim	/^let s:spaces = '               '$/;"	variable	line:129
+tempDir	C:\tmp\vimfiles\plugin\TagsBase.vim	/^let s:tempDir=fnamemodify(tempname(),":p:h")$/;"	variable	line:144

@@ -124,6 +124,7 @@ $menuName = VIM::Eval('g:TagsBase_menuName');
 $groupByType = VIM::Eval("g:TagsBase_groupByType");
 $pattern=VIM::Eval('g:TagsBase_pattern');
 $typePar=VIM::Eval('g:TagsBase_typePar');
+$filePar=VIM::Eval('g:TagsBase_filePar');
 $namePar=VIM::Eval('g:TagsBase_namePar');
 $linePar=VIM::Eval('g:TagsBase_linePar');
 $maxMenuSize = VIM::Eval('g:TagsBase_MaxMenuSize');
@@ -143,6 +144,7 @@ sub ComputeMenu
 	my $width = int(@{$curSubMenuRef} / $maxMenuSize)+1;
 	#VIM::Msg("width $width");
 	my $shortType = shift;
+	my $curPriority;
 	if ($width == 1)
 	{
 		my $short = 'a';
@@ -179,17 +181,27 @@ sub ComputeMenu
 			my $dummy;		#will hold unused repeatCount
 			($prevNameSmall, $dummy) = @{@{$curSubMenuRef}[$curStart]};
 			($prevNameBig, $dummy) = @{@{$curSubMenuRef}[$curMax]};
+			$curPriority = ord($short);
 			if ($localMenuName)
 			{
-				$curMenuName = "$localPriority $localMenuName.$prevNameSmall--$prevNameBig<tab>&$short";
+				$curPriority = "$localPriority.$curPriority";
+				$curMenuName = "$localMenuName.$prevNameSmall--$prevNameBig<tab>&$short";
 			}
 			else
 			{
-				$curMenuName = "..$curStart $menuName.$type<tab>&$shortType.$prevNameSmall--$prevNameBig<tab>&$short" if ($groupByType);
-				$curMenuName = ".$curStart $menuName.$prevNameSmall--$prevNameBig<tab>&$short" unless ($groupByType);
+				if ($groupByType)
+				{
+					$curPriority = "500.500.$curPriority";
+					$curMenuName = "$menuName.$type<tab>&$shortType.$prevNameSmall--$prevNameBig<tab>&$short";
+				}
+				else
+				{
+					$curPriority = "500.$curPriority";
+					$curMenuName = " $menuName.$prevNameSmall--$prevNameBig<tab>&$short" unless ($groupByType);
+				}
 			}				
-			$menuCommand .= "\\namenu <silent> $curMenuName";
-			$menuCommand .=" :perl TagsBase::BuildBase('$curMenuName', '$type',$curStart, $curMax, $curPriority)<cr>";
+			$menuCommand .= "\\namenu <silent> $curPriority $curMenuName";
+			$menuCommand .=" :perl TagsBase::BuildBase('$SourceFile', '$curMenuName', '$type',$curStart, $curMax, '$curPriority')<cr>";
 			$short = chr(ord($short) + 1);
 		}
 	}
@@ -203,6 +215,7 @@ sub parseTags
 	die ("failed to open $file") unless open TAGS, $file;
 	my $typedCount = -1 ;  	#number of parsed tags for the $localType
 	my $Tag;
+	my $tagSourceFile;	#source file according to the tags file
 	while (<TAGS>)
 	{
 		#		$count++;	
@@ -223,6 +236,16 @@ sub parseTags
 		#					';
 		next unless /$pattern/ox;
 		$name = eval $namePar;
+#		$tagSourceFile = eval $filePar;
+#		$tagSourceFile =~s!\\!/!go;
+#		if ($tagSourceFile ne $SourceFile )
+#		{
+#			VIM::Msg "wrong tag file rebuilding";
+#			die ("tag file $file correspond to file $tagSourceFile not $SourceFile and could not be deleted") if (VIM::Eval("delete(b:fileName)") != 0);
+#			VIM::DoCommand("unlet b:fileName");
+#			VIM::DoCommand("TagsBaseRebuild");
+#			return 0;
+#		}
 		$type = eval $typePar;
 		$line = eval $linePar;
 		#check for the local case
@@ -231,6 +254,7 @@ sub parseTags
 		next if ($start && $typedCount < $start);
 		next if ($end && $typedCount > $end);
 		#check for repeated tag
+
 		if ($name eq $prevName)
 		{	
 			$repeatcount++;
@@ -258,7 +282,7 @@ sub parseTags
 		$Gbase->pushTag($Tag) unless $localMenuName;
 	}
 	close TAGS;
-
+	return 1;
 }
 
 #high performance version of TagsBase
@@ -289,13 +313,15 @@ sub BuildBase
 	local $start;
 	local $end;
 	local $localPriority;
-	($localMenuName, $localType, $start, $end, $localPriority) = @_;	
+	local $SourceFile;
+	($SourceFile, $localMenuName, $localType, $start, $end, $localPriority) = @_;	
+	$SourceFile =~s!\\!/!go;
 	#VIM::Msg "args " . join(", ", @_);
 	my $file = VIM::Eval("b:fileName");
 	#VIM::Msg "file $file";
 	$Gbase->initBase unless $localMenuName;
-	parseTags($file);
-	
+	return unless parseTags($file);
+
 
 	#post processing:	
 	#compute menus
@@ -322,13 +348,14 @@ sub BuildBase
 		#when the menu command is local do not add it to the global command
 		$menuCommand =~ s/\t/<tab>/go;
 		$localMenuName =~ s/\t/<tab>/go;
-	#	$menuCommand = qq!aunmenu $localMenuName | exec "$menuCommand" | popup $localMenuName!;
+		#	$menuCommand = qq!aunmenu $localMenuName | exec "$menuCommand" | popup $localMenuName!;
 		$menuCommand = qq!aunmenu $localMenuName | exec "$menuCommand" | $path!;
 		#VIM::Msg $menuCommand
 	}
 	else
 	{	
 		$menuCommand = qq!let b:TagsBase_menuCommand = b:TagsBase_menuCommand . "$menuCommand" | exec b:TagsBase_menuCommand!;
+		#VIM::Msg $menuCommand;
 	}
 	VIM::DoCommand $menuCommand;
 	$time = time() -$startTime;
@@ -379,7 +406,7 @@ sub GetTagName
 	return $elem->[1];			#for debugging
 }
 
-BuildBase;
+BuildBase 'c:\Documents and Settings\Ben\vimfiles\perl\TagsBase.pl';
 my @blines = $Gbase->getBase;
 GetTagType( $blines[3][0] +1);
 GetTagName( $blines[3][0] + 10);

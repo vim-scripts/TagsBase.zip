@@ -6,7 +6,7 @@
 " Last Modified: 1 Octobre 2001
 " Maintainer: Benoit Cerrina, <benoit.cerrina@writeme.com>
 " Location: http://benoitcerrina.dnsalias.org/vim/TagsBase.html.
-" Version: 0.8.3
+" Version: 0.8.4
 " See the accompaning documentation file for information on purpose,
 " installation, requirements and available options.
 " License: this is in the public domain.
@@ -171,6 +171,7 @@ sub ComputeMenu
 	my $width = int(@{$curSubMenuRef} / $maxMenuSize)+1;
 	#VIM::Msg("width $width");
 	my $shortType = shift;
+	my $curPriority;
 	if ($width == 1)
 	{
 		my $short = 'a';
@@ -207,17 +208,27 @@ sub ComputeMenu
 			my $dummy;		#will hold unused repeatCount
 			($prevNameSmall, $dummy) = @{@{$curSubMenuRef}[$curStart]};
 			($prevNameBig, $dummy) = @{@{$curSubMenuRef}[$curMax]};
+			$curPriority = ord($short);
 			if ($localMenuName)
 			{
-				$curMenuName = "$localPriority $localMenuName.$prevNameSmall--$prevNameBig<tab>&$short";
+				$curPriority = "$localPriority.$curPriority";
+				$curMenuName = "$localMenuName.$prevNameSmall--$prevNameBig<tab>&$short";
 			}
 			else
 			{
-				$curMenuName = "..$curStart $menuName.$type<tab>&$shortType.$prevNameSmall--$prevNameBig<tab>&$short" if ($groupByType);
-				$curMenuName = ".$curStart $menuName.$prevNameSmall--$prevNameBig<tab>&$short" unless ($groupByType);
+				if ($groupByType)
+				{
+					$curPriority = "500.500.$curPriority";
+					$curMenuName = "$menuName.$type<tab>&$shortType.$prevNameSmall--$prevNameBig<tab>&$short";
+				}
+				else
+				{
+					$curPriority = "500.$curPriority";
+					$curMenuName = " $menuName.$prevNameSmall--$prevNameBig<tab>&$short" unless ($groupByType);
+				}
 			}				
-			$menuCommand .= "\\namenu <silent> $curMenuName";
-			$menuCommand .=" :perl TagsBase::BuildBase('$curMenuName', '$type',$curStart, $curMax, $curPriority)<cr>";
+			$menuCommand .= "\\namenu <silent> $curPriority $curMenuName";
+			$menuCommand .=" :perl TagsBase::BuildBase('$curMenuName', '$type',$curStart, $curMax, '$curPriority')<cr>";
 			$short = chr(ord($short) + 1);
 		}
 	}

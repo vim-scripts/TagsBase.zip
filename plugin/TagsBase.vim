@@ -6,7 +6,7 @@
 " Last Modified: 1 Octobre 2001
 " Maintainer: Benoit Cerrina, <benoit.cerrina@writeme.com>
 " Location: http://benoitcerrina.dnsalias.org/vim/TagsBase.html.
-" Version: 0.8.3
+" Version: 0.9
 " See the accompaning documentation file for information on purpose,
 " installation, requirements and available options.
 " License: this is in the public domain.
@@ -34,6 +34,7 @@ command! TagsBaseTitle call <SID>TBTitle()
 command! -nargs=1 -complete=tag TagsBaseTag :call <SID>SimpleGoToTag('<args>')
 command! TagsBaseRebuild :call <SID>TagsBase_Rebuild()
 command! TagsBaseDump :call <SID>TagsBase_DumpTags()
+command! TagsWindow :call <SID>TagWindow()
 "command! TagsBaseCleanUp :call <SID>CleanupStuff()
 
 " ------------------------------------------------------------------------
@@ -79,7 +80,7 @@ call s:TagsBaseSet('g:TagsBase_MaxMenuSize', 20)
 call s:TagsBaseSet('g:TagsBase_ctagsCommand',"ctags --fields=Kn -o ")
 call s:TagsBaseSet('g:TagsBase_menuName', "Ta&gs")
 if has('perl')
-	call s:TagsBaseSet('g:TagsBase_pattern','^(?!!)([^\t]*)\t[^\t]*\t(.*);"\t([^\t]*)\tline:(\d*).*$')
+	call s:TagsBaseSet('g:TagsBase_pattern','^(?!!)([^\t]*)\t([^\t]*)\t(.*);"\t([^\t]*)\tline:(\d*).*$')
 	"the following pattern should work with perl /x but it doesn't when embedded
 	"		$pattern = '
 	"						^					#parse the whole line
@@ -94,10 +95,11 @@ if has('perl')
 	"					';
 	"
 	call s:TagsBaseSet('g:TagsBase_namePar','$1')
-	call s:TagsBaseSet('g:TagsBase_exprPar','$2')
-	call s:TagsBaseSet('g:TagsBase_typePar','$3')
-	call s:TagsBaseSet('g:TagsBase_linePar','$4')
-	runtime perl/TagsBase.vim
+	call s:TagsBaseSet('g:TagsBase_filePar','$2')
+	call s:TagsBaseSet('g:TagsBase_exprPar','$3')
+	call s:TagsBaseSet('g:TagsBase_typePar','$4')
+	call s:TagsBaseSet('g:TagsBase_linePar','$5')
+	source <sfile>:p:h/perl/TagsBase.vim
 else
 "GetVimIndent	C:\vim\vim60\indent\vim.vim	/^function GetVimIndent()$/;"	function	line:20
 "this is the type of line matched by the following pattern"
@@ -261,14 +263,16 @@ endfunction
 
 " Creates the tag file associated with a buffer and stores its name in
 " b:fileName
+" if tmp==1 create a temporary tag file if tmp=0 tries to create a permanent
+" one
 " returns 1 if the file was regenerated 0 otherwise
-function! s:CreateFile()
+function! s:CreateFile(tmp)
 	"build file name"
-	if !exists("b:fileName") || b:fileName == ""
+	if !exists("b:fileName") || b:fileName == "" || a:tmp == 1
 		let dir= fnamemodify(@%,":p:h")
 		let name = fnamemodify(@%, ":t")
 		let b:fileName = dir . "/" . g:TagsBase_prefix . name . g:TagsBase_sufix
-		if !filewritable(b:fileName) && !filewritable(dir)
+		if a:tmp == 1 || (!filewritable(b:fileName) && !filewritable(dir))
 			let b:fileName = s:tempDir . "/" . g:TagsBase_prefix . name . g:TagsBase_sufix
 			call s:SetFileName(b:fileName, 1)
 		else
@@ -285,10 +289,17 @@ function! s:CreateFile()
 		"change the directory
 		let dir=fnamemodify(b:fileName , ":p:h")
 		let olddir=getcwd()
-		silent execute "cd " . dir
-		call system( lCommand )
-		silent execute "cd " . olddir
-
+		silent! execute "cd " . dir
+		silent! call system( lCommand )
+		silent! execute "cd " . olddir
+		"check that the file was written or try a temp file (this is to
+		"correct the nt acl bug)"
+		if (!filereadable(b:fileName) || getftime(b:fileName) < getftime(@%))
+			if a:tmp==1
+				return 0   "stop trying
+			endif
+			call s:CreateFile(1)
+		endif
 		let fileName = b:fileName   "local variable because we'll switch buffer
 		return 1
 	else
@@ -303,16 +314,16 @@ function! s:TagsBase_Rebuild()
 
 	let start = localtime()
 
-	if !s:CreateFile() && exists("b:TagsBase_menuCommand")
+	if !s:CreateFile(0) && exists("b:TagsBase_menuCommand")
 		"tags file didn't change therefore no need to recompute the menu
 		execute b:TagsBase_menuCommand
 		return
 	endif	
 	call s:InitializeMenu()
 	if (has("perl"))
-		perl TagsBase::BuildBase
+		perl TagsBase::BuildBase 
 		let time = localtime() - start
-		echo "tags built in " . time
+		""echo "tags built in " . time
 		return
 	endif
 	"check if the file is readable
@@ -365,6 +376,9 @@ function! s:InitializeMenu()
 	let b:TagsBase_menuCommand =  "amenu " . g:TagsBase_menuName . ".subname :echo\\ foo\n"
 	let b:TagsBase_menuCommand = b:TagsBase_menuCommand . "aunmenu " . g:TagsBase_menuName ."\n"
 	"	and now, add the top of the new menu
+	
+	let b:TagsBase_menuCommand = b:TagsBase_menuCommand .  
+				\ "amenu <silent>" . g:TagsBase_menuName . ".&Open\\ Tags\\ Buffer :TagsWindow<CR><CR>\n"
 	let b:TagsBase_menuCommand = b:TagsBase_menuCommand .  
 				\ "amenu <silent>" . g:TagsBase_menuName . ".&Rebuild\\ Tags\\ Base :TagsBaseRebuild<CR><CR>\n"
 	let b:TagsBase_menuCommand = b:TagsBase_menuCommand .  
@@ -580,4 +594,38 @@ function! TagsBase_GoToTag(iTag, iIndex)
 		silent tn
 	endwhile
 	let &tags=oldTag
+endfunction
+
+function! s:TagWindow()
+	let bufnr = bufnr('%')
+	
+	sp TagsBuffer
+	let b:bufnr = bufnr
+	let b:tagFile = getbufvar(b:bufnr, "fileName")
+	set ft=TagsBase
+	" feel in the buffer
+	call s:UpdateTagBuffer(bufnr('%'))
+endfunction
+
+"assume the buffer bufnr is a tagsbase buffer and update it
+function! s:UpdateTagBuffer(bufnr)
+	"empty the buffer
+	let buf = bufnr('%')
+	exe 'b '.a:bufnr
+	set modifiable
+	silent 0,$del
+	silent exe 'r! ctags -x ' . fnamemodify(bufname(b:bufnr), ":p")
+	"reorder the buffer with line\ttype\t\tname"
+	silent :%s/\(\S*\)\s\+\(\S*\)\s\+\(\S*\)\s\+\(\S*\)\s\+.*/\3\t\2\t\t\1/
+	set nomodifiable
+	exe 'b '. buf
+endfunction
+
+function! TagsBaseBufGotoTag()
+	"get the line number
+	let ln = matchstr(getline('.'), '^\d\+')
+	let bufnr = b:bufnr
+	quit
+	exe 'b ' . bufnr
+	exe ln
 endfunction
