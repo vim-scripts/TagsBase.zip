@@ -29,8 +29,26 @@ let loaded_TagsBase = 1
 " AUTO COMMANDS: things to kick start the script
 autocmd FileType * call <SID>TagsBase_checkFileType()
 set updatetime=500
-command! TBTitle autocmd CursorHold * if exists('b:lines') | let &titlestring='%t%( %M%)%( (%{expand("%:~:.:h")})%)%( %a%)%='.<SID>GetTagName(line(".")) | endif
+command! TBTitle call <SID>TBTitle()
 
+function s:TBTitle()
+    aug TBTitle
+    if exists("s:titleOn") && s:titleOn
+        let s:titleOn=0
+        "remove autocommands for group TBTitle"
+        au! 
+        if exists("b:titlestring")
+            let &titlestring=b:titlestring
+        else
+            let &titlestring=""
+        endif
+    else
+        let s:titleOn=1
+        let b:titlestring=&titlestring
+        autocmd CursorHold * if exists('b:lines') | let &titlestring='%t%( %M%)%( (%{expand("%:~:.:h")})%)%( %a%)%='.<SID>GetTagName(line(".")) | endif
+    endif
+    aug END
+endfunction
 
 
 " ------------------------------------------------------------------------
@@ -180,6 +198,7 @@ function! s:InitializeMenu()
 
     " and now, add the top of the new menu
     execute "amenu " . s:menu_name . ".&Rebuild\\ Tags\\ Menu :call <SID>TagsBase_createMenu()<CR><CR>"
+    execute "amenu " . s:menu_name . ".&Toggle\\ Title\\ Autocommand :TBTitle<CR><CR>"
     execute "amenu " . s:menu_name . ".-SEP- :"
 endfunction
 
