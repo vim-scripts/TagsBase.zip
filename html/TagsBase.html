@@ -1,0 +1,316 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+	<title>Tags Base for GVIM (v. 0.5)</title>
+</head>
+<body>
+<h1>Tags Base for GVim (v. 0.5)</h1>
+
+<hr>
+<h2>Table of Contents</h2>
+
+<ul>
+<li><a href="#introduction">Introduction</a> 
+
+<ul>
+<li><a href="#description">Description</a></li>
+
+<li><a href="#features">Features</a></li>
+
+<li><a href="#screenshots">Screenshots</a></li>
+</ul>
+</li>
+
+<li><a href="#installation">Installation</a> 
+
+<ul>
+<li><a href="#requirements">Requirements</a></li>
+
+<li><a href="#installation2">Installation</a> 
+
+<ul>
+<li><a href="#options">Options</a></li>
+</ul>
+</li>
+
+<li><a href="#source code">Source Code / Download</a></li>
+</ul>
+</li>
+
+<li><a href="#misc">Misc</a> 
+
+<ul>
+<li><a href="#known problems">Known Problems</a></li>
+
+<li><a href="#future aspirations">Future Aspirations</a></li>
+
+<li><a href="#version history">Version History</a></li>
+</ul>
+</li>
+
+<li><a href="#admin stuff">Admin Stuff</a></li>
+</ul>
+
+<hr>
+<h2><a name="introduction">Introduction</a></h2>
+
+<h3><a name="description">Description</a></h3>
+
+<p>Tags Base is the result of the merge of the <a href="http://members.home.net/jayglanville/tagsmenu/TagsMenu.html">TagsMenu </a> script and the <a href="http://vim.sourceforge.net/scripts/script.php?script_id=12">ctags</a> script.</p>
+<p>Tags Base generates a tags file for the currently edited file, refreshes it if the file is newer than
+the tags file and uses it to provide a set of smart feature to vim.  Right now the feature provided are 
+those of the original scripts merged in one: detection of the currently edited function (or more precisely
+of the last tag above the current line) and creation of a menu of tags in the file</p>
+
+<p>A tag can be one of many things. This list includes (but is
+not limited to): classes, functions, methods, attributes, fields,
+variables, includes, and interfaces. Tags Menu shows all tags
+supported by ctags. (For the full list of supported attributes,
+see <a href="http://ctags.sourceforge.net/">Exuberant
+CTags</a>.)</p>
+
+<h3><a name="features">Features</a></h3>
+
+<p>Ok. Here's the short list:</p>
+
+<ul>
+	<li>selecting an item in the menu takes you to that tag, this uses the vim built in tag support 
+	and therefore enrich the stack of tags for easy navigation</li>
+
+<li>users can modify the behaviour of the script through
+variables (options) instead of altering the script directly</li>
+
+<li>can group tags together by tag type</li>
+
+
+<li>automatically executes on filetypes that ctags knows
+about</li>
+
+<li>deals with both types of search patters: reg-ex searches ( //
+and ?? ) and line numbers</li>
+
+<li>it's a vim script - so anywhere you have gvim and exuberant
+ctags, it works</li>
+</ul>
+
+<h3><a name="screenshots">Screenshots</a></h3>
+
+<p>As they say, a picture is worth a thousand words, so here's
+about 2000. The following are two screenshots. Those are reused
+fromt the description of TagsMenu</p>
+
+
+<ul>
+<li><a href="http://members.home.net/jayglanville/tagsmenu/grouped.jpg">A screen shot of a Java file, where the
+tags are grouped together by tag type.</a></li>
+
+<li><a href="http://members.home.net/jayglanville/tagsmenu/nogrouped.jpg">A screen shot of the same Java file,
+where the tags are not grouped together by tag type.</a></li>
+</ul>
+
+<hr>
+<h2><a name="installation">Installation</a></h2>
+
+<h3><a name="requirements">Requirements</a></h3>
+
+<p>TagsBase for GVim has only two requirements: <a href= 
+"http://www.vim.org">gvim 6.x</a>, and <a href= 
+"http://ctags.sourceforge.net/">Exuberant Ctags 5.0</a>. 
+ctags is not distributed with vim anymore but its a great
+tool for any programmer using vim.</p>
+
+<blockquote>
+<p><b>Note 1:</b> if you do not have version 5.0 of ctags, I
+recommend that you upgrade, it may work but it is not tested.</p>
+
+<p><b>Note 2:</b> the requirement is for <i><b>Exuberant</b></i>
+ctags. This satisfies the requirements of the <code>
+--fields=Kn</code> need which gives the level two formats for the tag
+information.  Other ctags program may provide it but you'll need to 
+tweak the parsing regexps</p>
+</blockquote>
+
+<h3><a name="installation2">Installation</a></h3>
+
+<p>Installation is very simple. Place the script in a plugin directory
+in your runtime path.</p>
+
+<h4><a name="options">Options</a></h4>
+
+<p>There are several options (actually global variables) that users can modify to change the
+scripts behaviour. In order to set an option, simply type <code>
+let &lt;option-name&gt;=&lt;option-value&gt;</code> on the line
+below where you sourced the script, or <code>:let
+&lt;option-name&gt;=&lt;option-value&gt;</code> directly within
+GVim.</p>
+
+<table summary="Option list" rules="all">
+<caption>Option List</caption>
+
+<tr>
+<th>Option</th>
+<th>Default Value</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td>g:TagsBase_groupByType</td>
+<td>1 (true)</td>
+<td>If true, then each tag is grouped together by it's type, and
+sub-menus are created for each type of tag.<br>
+If false, then no grouping is performed, and all tags are in one
+menu.</td>
+</tr>
+
+<tr>
+	<td>g:TagsBase_useAutoCommand</td>
+<td>1 (true)</td>
+<td>If true, then auto commands are set up such that every time a
+buffer is loaded, who's filetype is one of the ones recognized by
+ctags, then the Tags Menu is created.<br>
+If false, then no auto commands are setup. In this case, it is up
+to the user for force tag menu regeneration.</td>
+</tr>
+<tr>
+<td>g:TagsBase_ctagsCommand</td>
+<td><code>ctags --fields=Kn -o </code></td>
+<td>This is the actual command that the script uses to get tag
+	information (note that the tag filename and the current filename 
+	is added to the end
+	of this).
+	Be aware that if you change this you'll probably need to change the 
+	g:TagsBase_ctagsPattern regexp and associated g:TagsBase_namePar, g:TagsBase_exprPar and g:TagsBase_linePar options
+</tr>
+
+<tr>
+<td> g:TagsBase_debug</td>
+<td>0 (false)</td>
+<td>If true, then this option produces copious amounts of
+information on the screen, plus leaves the temporary buffer open,
+as the script is run.</td>
+</tr>
+
+<tr>
+<td>g:TagsBase_Pattern</td>
+<td><code>'^\([^\t]\{-}\)\t[^\t]\{-}\t\(.\{-}\);"\t\([^\t]*\)\tline:\(\d*\).*$'</code></td>
+<td>This is the regexp used to interpret the value of a Tag
+	Be aware that if you change this you'll probably need to change the 
+	g:TagsBase_namePar, g:TagsBase_exprPar, g:TagsBase_typePar and g:TagsBase_linePar options
+</tr>
+<tr>
+	<td>g:TagsBase_namePar, g:TagsBase_exprPar, g:TagsBase_typePar and g:TagsBase_linePar</td>
+	<td>\1, \2, \3, \4</td>
+	<td>
+		the substitution string to use in conjunction with g:TagsBase_ctagsPattern to extract diverse parts of the tag.
+	</td>
+</tr>
+</table>
+
+
+<h3><a name="source code">Source Code / Download</a></h3>
+
+<p>You can either <a href="TagsBase.vim.html">browse</a> the
+source code, or you can download the <a href="TagsBase.vim">script</a>.</p>
+
+<hr>
+<h2><a name="misc">Misc</a></h2>
+
+<h3><a name="known problems">Known Problems</a></h3>
+
+<p>No known problems anymore, please signal any bug you find.</p>
+
+<h3><a name="future aspirations">Future Aspirations</a></h3>
+Those are copied other from what was in TagsMenu
+<ul>
+	<li> vim compatible documentation</li>
+<li>all menu items should have shortcut keys to allow non-mouse use</li>
+
+<li>to allow users to set behaviour options through the
+menus.</li>
+
+<li>to not to have to use the ctags program directly, but to
+simply access the tags information internally (i.e.: from the
+file in the <code>tags</code> vim option).</li>
+
+<li>to setup autocommands for events like save file (change
+buffer, and open buffer autocommands already exist.) so that the
+user doesn't have to force the recalculation.</li>
+
+<li>upon invocation of the script, see if autosave is on and if
+so, save the file before calling ctags.</li>
+
+
+</ul>
+<h3><a name="version history">Version History</a></h3>
+
+<table summary="changelog" cellspacing="0" cellpadding="4" border="0" width="100%">
+	<tr>
+    <td valign="top" nowrap>[02-Oct-2001] <b>0.4</b></td>
+    <td valign="top" nowrap>(vim 6.0)</td>
+	<td width="2000" valign="top">"Added help, made the customization easier."</td>
+</tr>
+
+<tr>
+    <td valign="top" nowrap>[02-Oct-2001] <b>0.4</b></td>
+    <td valign="top" nowrap>(vim 6.0)</td>
+	<td width="2000" valign="top">"reorganized and commented the script, support for the builtin tags stack, support for ordered tag file generation, some bugs corrected."</td>
+</tr>
+
+<tr>
+    <td valign="top" nowrap>[01-Oct-2001] <b>0.3</b></td>
+    <td valign="top" nowrap>(vim 6.0)</td>
+    <td width="2000" valign="top">"added a menu entry to toggle on and off the title string functionality"</td>
+</tr>
+<tr>
+    <td valign="top" nowrap>[01-Oct-2001] <b>0.2</b></td>
+    <td valign="top" nowrap>(vim 6.0)</td>
+    <td width="2000" valign="top">"Corrected dependency on a $TMP variable
+<br>corrected bug when on an ms system the shell used was a unix type shell, this generated problems due to the shell misinterpreting the '&#039; in a path.
+<br>If you find any other bugs, please report it by mail to me (benoit.cerrina@writeme.com"</td>
+</tr>
+<tr>
+    <td valign="top" nowrap><span class="newsdate">[30-Sep-2001]</span> <b>0.1</b></td>
+    <td valign="top" nowrap>(vim 6.0)</td>
+    <td valign="top" nowrap><a href="download.php?src_id=208">Download</a></td>
+    <td valign="top"><i><a href="/account/profile.php?user_id=251">Benoit Cerrina</a></i></td>
+    <td width="2000" valign="top">"Initial upload"</td>
+</tr>
+</table>
+
+<hr>
+<h2><a name="admin stuff">Admin Stuff</a></h2>
+
+<table rules="all" summary="misc admin stuff">
+<tr>
+<td>Author</td>
+<td>Benoit Cerrina</td>
+</tr>
+
+<tr>
+<td>E-Mail</td>
+<td>Benoit.Cerrina@writeme.com</td>
+</tr>
+
+<tr>
+<td>Web Page</td>
+<td><a href= 
+		"http://benoitcerrina.dnsalias.org/TagsBase.html">http://benoitcerrina.dnsalias.org/TagsBase.html
+</a></td>
+</tr>
+
+
+<tr>
+<td>Version</td>
+<td>Tags Base for GVim version 0.5</td>
+</tr>
+
+<tr>
+	<td>Copyright</td>
+	<td>due to the large portions of TagsMenu which were included, this script is covered by the <a href= 
+"http://www.gnu.org/copyleft/gpl.html">GNU General Protection
+License (GPL)</a>.</td>
+</tr>
+</table>
+</body>
+</html>
+

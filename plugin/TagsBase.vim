@@ -6,7 +6,7 @@
 " Last Modified: 1 Octobre 2001
 " Maintainer: Benoit Cerrina, <benoit.cerrina@writeme.com>
 " Location: http://benoitcerrina.dnsalias.org/vim/TagsBase.html.
-" Version: 0.4
+" Version: 0.5
 " See the accompaning documentation file for information on purpose,
 " installation, requirements and available options.
 
@@ -16,6 +16,15 @@ if exists("loaded_TagsBase")
     finish
 endif
 let loaded_TagsBase = 1
+
+" function to set a global variable if it is not already set
+function! s:TagsBaseSet(varname, varvalue)
+    if !exists(a:varname)
+	execute "let ". a:varname . " = '" . a:varvalue ."'"
+    endif
+endfunction
+
+
 
 " COMMANDS:
 " commands accessible from outside the plugin to manipulate the TagsBase
@@ -54,13 +63,14 @@ endfunction
 " OPTIONS: can be set to define behaviour
 
 " Does this script produce debugging information?
-let g:TagsBase_debug = 0
+
+call s:TagsBaseSet('g:TagsBase_debug','0')
 " A list of characters that need to be escaped
-let g:TagsBase_escapeChars = "|"
+call s:TagsBaseSet('g:TagsBase_escapeChars','|')
 " Are the tags grouped and submenued by tag type?
-let g:TagsBase_groupByType = 1
+call s:TagsBaseSet('g:TagsBase_groupByType','1')
 " Does this script get automaticly run?
-let g:TagsBase_useAutoCommand = 1
+call s:TagsBaseSet('g:TagsBase_useAutoCommand','1')
 
 "TAGS PARSING OPTIONS:
 "variables which can be used to customize the way the plugin
@@ -71,17 +81,17 @@ let g:TagsBase_useAutoCommand = 1
 "this is the command used to launch ctags. The --fields result in additional
 "information being appended to the tag format, those are then used to build
 "the menu and find the value of the tag preceding a given line
-let g:TagsBase_ctagsCommand = "ctags --fields=Kn -o "
+call s:TagsBaseSet('g:TagsBase_ctagsCommand',"ctags --fields=Kn -o ")
 "
 "this is the type of line matched by the following pattern"
 "bignumClass	C:\dev\jRuby\org\jruby\Ruby.java	72;"	field	class:Ruby	file:"
 "this can be overriden but the parenthesis must still have the meaning in the
 "following variables
-let g:TagsBase_pattern='^\([^\t]\{-}\)\t[^\t]\{-}\t\(.\{-}\);"\t\([^\t]*\)\tline:\(\d*\).*$'
-let g:TagsBase_namePar='\1'
-let g:TagsBase_exprPar='\2'
-let g:TagsBase_typePar='\3'
-let g:TagsBase_linePar='\4'
+call s:TagsBaseSet('g:TagsBase_pattern','^\([^\t]\{-}\)\t[^\t]\{-}\t\(.\{-}\);"\t\([^\t]*\)\tline:\(\d*\).*$')
+call s:TagsBaseSet('g:TagsBase_namePar','\1')
+call s:TagsBaseSet('g:TagsBase_exprPar','\2')
+call s:TagsBaseSet('g:TagsBase_typePar','\3')
+call s:TagsBaseSet('g:TagsBase_linePar','\4')
 
 
 
@@ -121,9 +131,9 @@ let s:tempDir=fnamemodify(tempname(),":p:h")
 
 if !exists("g:CatProg") || g:CatProg == ""
     if executable("cat")
-        let g:CatProg="cat"
+        call s:TagsBaseSet('g:CatProg','"cat"')
     elseif has('win32') || has('win95') || has('win16') || has('dos32') || has('dos16')
-        let g:CatProg="type"
+        call s:TagsBaseSet('g:CatProg','"type"')
     else
         let g: CatProg = inputdialog("Please enter location of cat program:")
     endif
@@ -131,6 +141,7 @@ endif
 
 " ------------------------------------------------------------------------
 " SCRIPT SCOPE FUNCTIONS: functions with a local script scope
+
 
 " This function is called everytime a filetype is set.  All it does is
 " check the filetype setting, and if it is one of the filetypes recognized

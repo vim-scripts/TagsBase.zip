@@ -1,0 +1,395 @@
+<html>
+<head>
+<title>c:\tmp\vimfiles\plugin\TagsBase.vim.html</title>
+<meta name="Generator" content="Vim/6.0">
+</head>
+<body bgcolor="#ffffff" text="#000000">
+<pre>
+<font color="#0000ff">&quot; TagsBase for Vim: plugin to make a mini database of tags in the current file</font>
+<font color="#0000ff">&quot; this is then used to create a menu and to offer additional 'smart'</font>
+<font color="#0000ff">&quot; functionality like finding the name of the current function.</font>
+<font color="#0000ff">&quot; This is a megre of the TagsMenu.vim plugin from  Jay Dickon Glanville &lt;jayglanville@home.com&gt;</font>
+<font color="#0000ff">&quot; and the ctags.vim script from Alexey Marinichev &lt;lyosha@lyosha.2y.net&gt;</font>
+<font color="#0000ff">&quot;</font> <font color="#a020f0">Last Modified:</font><span class=c29> 1 Octobre 2001</span>
+<font color="#0000ff">&quot;</font> <font color="#a020f0">Maintainer:</font><span class=c29> Benoit Cerrina, &lt;benoit.cerrina@writeme.com&gt;</span>
+<font color="#0000ff">&quot;</font> <font color="#a020f0">Location:</font><span class=c29> http://benoitcerrina.dnsalias.org/vim/TagsBase.html.</span>
+<font color="#0000ff">&quot;</font> <font color="#a020f0">Version:</font><span class=c29> 0.5</span>
+<font color="#0000ff">&quot; See the accompaning documentation file for information on purpose,</font>
+<font color="#0000ff">&quot; installation, requirements and available options.</font>
+
+
+<font color="#0000ff">&quot; prevent multiple loadings ...</font>
+<font color="#804040"><b>if</b></font> <font color="#008080">exists</font>(<font color="#ff00ff">&quot;loaded_TagsBase&quot;</font><span class=c0>)</span>
+    <font color="#804040"><b>finish</b></font>
+<font color="#804040"><b>endif</b></font>
+<font color="#804040"><b>let</b></font> loaded_TagsBase<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">1</font>
+
+<font color="#0000ff">&quot; function to set a global variable if it is not already set</font>
+<font color="#804040"><b>function</b></font>! <font color="#6a5acd">s:</font><span class=c100>TagsBaseSet</span>(varname<span class=c0>, </span><span class=c89>varvalue</span><span class=c0>)</span>
+    <font color="#804040"><b>if</b></font><span class=c0> !</span><font color="#008080">exists</font>(a:varname<span class=c0>)</span>
+    <font color="#804040"><b>execute</b></font> <font color="#ff00ff">&quot;let &quot;</font><span class=c33>.</span><span class=c163> </span>a<span class=c163>:</span><span class=c90>varname</span><span class=c163> </span><span class=c33>.</span><span class=c163> </span><span class=c30>&quot; = '&quot;</span><span class=c163> </span><span class=c33>.</span><span class=c163> </span><span class=c90>a</span><span class=c163>:</span><span class=c90>varvalue</span><span class=c163> </span><span class=c33>.</span><span class=c30>&quot;'&quot;</span>
+    <font color="#804040"><b>endif</b></font>
+<font color="#804040"><b>endfunction</b></font>
+
+
+
+<font color="#0000ff">&quot;</font> <font color="#a020f0">COMMANDS:</font>
+<font color="#0000ff">&quot; commands accessible from outside the plugin to manipulate the TagsBase</font>
+<font color="#0000ff">&quot; to gain access to the name of the current tag in the title string</font>
+<font color="#0000ff">&quot; use this command</font>
+<font color="#804040"><b>command</b></font>! TagsBaseTitle<span class=c83> </span><span class=c33>call</span><span class=c83> </span><font color="#6a5acd">&lt;</font><span class=c31>SID</span><span class=c31>&gt;</span>TBTitle(<span class=c83>)</span>
+<font color="#804040"><b>command</b></font>! <span class=c33>-</span><font color="#a020f0">nargs</font><span class=c33>=</span><font color="#2e8b57"><b>1</b></font><span class=c83> </span><span class=c33>-</span><span class=c34>complete</span><span class=c33>=</span><span class=c35>tag</span><span class=c83> </span>TagsBaseTag<span class=c83> :</span><span class=c33>call</span><span class=c83> </span><font color="#6a5acd">&lt;</font><span class=c31>SID</span><span class=c31>&gt;</span>GoToTag(<font color="#ff00ff">'&lt;args&gt;'</font><span class=c83>)</span>
+<font color="#804040"><b>command</b></font>! TagsBaseRebuild<span class=c83> :</span><span class=c33>call</span><span class=c83> </span><font color="#6a5acd">&lt;</font><span class=c31>SID</span><span class=c31>&gt;</span>TagsBase_createMenu(<span class=c83>)</span>
+
+<font color="#0000ff">&quot; ------------------------------------------------------------------------</font>
+<font color="#0000ff">&quot;</font> <font color="#a020f0">AUTO COMMANDS:</font><span class=c29> things to kick start the script</span>
+<font color="#804040"><b>autocmd</b></font> <font color="#2e8b57"><b>FileType</b></font> *<span class=c0> </span><span class=c33>call</span><span class=c0> </span><font color="#6a5acd">&lt;</font><span class=c31>SID</span><span class=c31>&gt;</span>TagsBase_checkFileType(<span class=c0>)</span>
+<font color="#804040"><b>set</b></font> <font color="#a020f0">updatetime</font>=50<span class=c84>0</span>
+
+<font color="#804040"><b>function</b></font> <font color="#6a5acd">s:</font><span class=c100>TBTitle</span>()
+    <font color="#804040"><b>aug</b></font> TBTitle
+    <font color="#804040"><b>if</b></font><span class=c117> </span>exists<span class=c117>(</span><font color="#ff00ff">&quot;s:titleOn&quot;</font><span class=c117>) </span><span class=c33>&amp;&amp;</span><span class=c117> </span><span class=c89>s</span><span class=c117>:</span><span class=c89>titleOn</span>
+        <font color="#804040"><b>let</b></font><span class=c117> </span>s<span class=c117>:</span>titleOn<span class=c33>=</span><font color="#ff00ff">0</font>
+<font color="#0000ff">        &quot;remove autocommands for group TBTitle&quot;</font>
+        <font color="#804040"><b>au</b></font><span class=c117>! </span>
+        <font color="#804040"><b>if</b></font><span class=c117> </span>exists<span class=c117>(</span><font color="#ff00ff">&quot;b:titlestring&quot;</font><span class=c117>)</span>
+            <font color="#804040"><b>let</b></font><span class=c117> &amp;</span>titlestring<span class=c33>=</span><span class=c33>b</span><span class=c117>:</span><span class=c89>titlestring</span>
+        <font color="#804040"><b>else</b></font>
+            <font color="#804040"><b>let</b></font><span class=c117> &amp;</span>titlestring<span class=c33>=</span><font color="#ff00ff">&quot;&quot;</font>
+        <font color="#804040"><b>endif</b></font>
+    <font color="#804040"><b>else</b></font>
+        <font color="#804040"><b>let</b></font><span class=c117> </span>s<span class=c117>:</span>titleOn<span class=c33>=</span><font color="#ff00ff">1</font>
+        <font color="#804040"><b>let</b></font><span class=c117> </span>b<span class=c117>:</span>titlestring<span class=c33>=</span><span class=c117>&amp;</span><span class=c89>titlestring</span>
+        <font color="#804040"><b>autocmd</b></font><span class=c117> </span><font color="#2e8b57"><b>CursorHold</b></font> *<span class=c117> </span><span class=c33>if</span><span class=c117> </span>exists<span class=c117>(</span><font color="#ff00ff">'b:lines'</font><span class=c117>) | </span><span class=c33>let</span><span class=c117> &amp;</span><span class=c89>titlestring</span><span class=c33>=</span><span class=c30>'%t%( %M%)%( (%{expand(&quot;%:~:.:h&quot;)})%)%( %a%)%='</span><span class=c33>.</span><font color="#6a5acd">&lt;</font><span class=c31>SID</span><span class=c31>&gt;</span><span class=c89>GetTagName</span><span class=c117>(</span><span class=c89>line</span><span class=c117>(</span><span class=c30>&quot;.&quot;</span><span class=c117>)) | </span><span class=c33>endif</span>
+    <font color="#804040"><b>endif</b></font>
+    <font color="#804040"><b>aug</b></font><span class=c117> </span>END
+<font color="#804040"><b>endfunction</b></font>
+
+
+<font color="#0000ff">&quot; ------------------------------------------------------------------------</font>
+<font color="#0000ff">&quot;</font> <font color="#a020f0">OPTIONS:</font><span class=c29> can be set to define behaviour</span>
+
+<font color="#0000ff">&quot; Does this script produce debugging information?</font>
+
+<font color="#804040"><b>call</b></font> s:TagsBaseSet<span class=c0>(</span><font color="#ff00ff">'g:TagsBase_debug'</font><span class=c0>,</span><span class=c30>'0</span><span class=c0>')</span>
+<font color="#0000ff">&quot; A list of characters that need to be escaped</font>
+<font color="#804040"><b>call</b></font> s:TagsBaseSet<span class=c0>(</span><font color="#ff00ff">'g:TagsBase_escapeChars'</font><span class=c0>,</span><span class=c30>'|'</span><span class=c0>)</span>
+<font color="#0000ff">&quot; Are the tags grouped and submenued by tag type?</font>
+<font color="#804040"><b>call</b></font> s:TagsBaseSet<span class=c0>(</span><font color="#ff00ff">'g:TagsBase_groupByType'</font><span class=c0>,</span><span class=c30>'1</span><span class=c0>')</span>
+<font color="#0000ff">&quot; Does this script get automaticly run?</font>
+<font color="#804040"><b>call</b></font> s:TagsBaseSet<span class=c0>(</span><font color="#ff00ff">'g:TagsBase_useAutoCommand'</font><span class=c0>,</span><span class=c30>'1</span><span class=c0>')</span>
+
+<font color="#0000ff">&quot;</font><font color="#a020f0">TAGS PARSING OPTIONS:</font>
+<font color="#0000ff">&quot;variables which can be used to customize the way the plugin</font>
+<font color="#0000ff">&quot;parse tags beware they are very closely related one to another</font>
+<font color="#0000ff">&quot;and changing the value of one and note the others is</font>
+<font color="#0000ff">&quot;dangerous</font>
+<font color="#0000ff">&quot;</font>
+<font color="#0000ff">&quot;this is the command used to launch ctags. The --fields result in additional</font>
+<font color="#0000ff">&quot;information being appended to the tag format, those are then used to build</font>
+<font color="#0000ff">&quot;the menu and find the value of the tag preceding a given line</font>
+<font color="#804040"><b>call</b></font> s:TagsBaseSet<span class=c0>(</span><font color="#ff00ff">'g:TagsBase_ctagsCommand'</font><span class=c0>,</span><span class=c30>&quot;ctags --fields=Kn -o &quot;</span><span class=c0>)</span>
+<font color="#0000ff">&quot;</font>
+<font color="#0000ff">&quot;this is the type of line matched by the following pattern&quot;</font>
+<font color="#0000ff">&quot;bignumClass    C:\dev\jRuby\org\jruby\Ruby.java    72;&quot;    field   class:Ruby  file:&quot;</font>
+<font color="#0000ff">&quot;this can be overriden but the parenthesis must still have the meaning in the</font>
+<font color="#0000ff">&quot;following variables</font>
+<font color="#804040"><b>call</b></font> s:TagsBaseSet<span class=c0>(</span><font color="#ff00ff">'g:TagsBase_pattern'</font><span class=c0>,</span><span class=c30>'^</span><font color="#6a5acd">\(</font><span class=c30>[^\t]\{-}</span><span class=c31>\)</span><span class=c30>\t[^\t]\{-}\t</span><span class=c31>\(</span><span class=c30>.\{-}</span><span class=c31>\)</span><span class=c30>;&quot;\t</span><span class=c31>\(</span><span class=c30>[^\t]*</span><span class=c31>\)</span><span class=c30>\tline:</span><span class=c31>\(</span><span class=c30>\d*</span><span class=c31>\)</span><span class=c30>.*$'</span><span class=c0>)</span>
+<font color="#804040"><b>call</b></font> s:TagsBaseSet<span class=c0>(</span><font color="#ff00ff">'g:TagsBase_namePar'</font><span class=c0>,</span><span class=c30>'\1'</span><span class=c0>)</span>
+<font color="#804040"><b>call</b></font> s:TagsBaseSet<span class=c0>(</span><font color="#ff00ff">'g:TagsBase_exprPar'</font><span class=c0>,</span><span class=c30>'\2'</span><span class=c0>)</span>
+<font color="#804040"><b>call</b></font> s:TagsBaseSet<span class=c0>(</span><font color="#ff00ff">'g:TagsBase_typePar'</font><span class=c0>,</span><span class=c30>'\3'</span><span class=c0>)</span>
+<font color="#804040"><b>call</b></font> s:TagsBaseSet<span class=c0>(</span><font color="#ff00ff">'g:TagsBase_linePar'</font><span class=c0>,</span><span class=c30>'\4'</span><span class=c0>)</span>
+
+
+
+<font color="#0000ff">&quot; ------------------------------------------------------------------------</font>
+<font color="#0000ff">&quot;</font> <font color="#a020f0">SCRIPT VARIABLES:</font><span class=c29> constants and variables who's scope is limited to this</span>
+<font color="#0000ff">&quot; script, but not limited to the inside of a method.</font>
+
+<font color="#0000ff">&quot; The name of the menu</font>
+<font color="#804040"><b>let</b></font> s:<span class=c0>menu_name </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">&quot;Ta&amp;gs&quot;</font>
+<font color="#0000ff">&quot; command to turn on magic</font>
+<font color="#804040"><b>let</b></font> s:yesmagic<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">&quot;&quot;</font>
+<font color="#0000ff">&quot; command to turn off magic</font>
+<font color="#804040"><b>let</b></font> s:nomagic<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">&quot;&quot;</font>
+<font color="#0000ff">&quot; the name of the previous tag recognized</font>
+<font color="#804040"><b>let</b></font> s:previousTag<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">&quot;&quot;</font>
+<font color="#0000ff">&quot; the count of the number of repeated tags</font>
+<font color="#804040"><b>let</b></font> s:repeatedTagCount<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">0</font>
+<font color="#0000ff">&quot; s:length is the length of a field in the b:lines array</font>
+<font color="#0000ff">&quot; s:length is one greater than the length of maximum line number.</font>
+<font color="#804040"><b>let</b></font> s:length<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">8</font>
+<font color="#0000ff">&quot; strlen(spaces) must be at least s:length.</font>
+<font color="#804040"><b>let</b></font> s:spaces<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">'               '</font>
+
+
+
+<font color="#0000ff">&quot; ---------------------------------------------------------------------</font>
+<font color="#0000ff">&quot;</font>  <font color="#a020f0">RUNTIME CONFIGURATION:</font>
+<font color="#0000ff">&quot;  some initialisation depending on the environment</font>
+
+<font color="#804040"><b>if</b></font> <font color="#008080">match</font>(<span class=c0>&amp;</span><span class=c33>shell</span><span class=c0>, </span><font color="#ff00ff">'sh'</font><span class=c0>, </span><span class=c30>''</span><span class=c0>) </span><span class=c33>==</span><span class=c0> </span><span class=c30>-1</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>s:slash<span class=c33>=</span><span class=c0>'\'</span>
+<font color="#804040"><b>else</b></font>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>s:slash<span class=c33>=</span><font color="#ff00ff">'/'</font>
+<font color="#804040"><b>endif</b></font>
+
+<font color="#804040"><b>let</b></font> s:tempDir<span class=c33>=</span><font color="#008080">fnamemodify</font>(<span class=c32>tempname</span><span class=c91>(</span><span class=c0>),</span><font color="#ff00ff">&quot;:p:h&quot;</font><span class=c0>)</span>
+
+<font color="#804040"><b>if</b></font> !<font color="#008080">exists</font>(<font color="#ff00ff">&quot;g:CatProg&quot;</font><span class=c0>) </span><span class=c33>||</span><span class=c0> </span>g:CatProg<span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;&quot;</span>
+    <font color="#804040"><b>if</b></font><span class=c0> </span><font color="#008080">executable</font>(<font color="#ff00ff">&quot;cat&quot;</font><span class=c0>)</span>
+        <font color="#804040"><b>call</b></font><span class=c0> </span>s:TagsBaseSet<span class=c0>(</span><font color="#ff00ff">'g:CatProg'</font><span class=c0>,</span><span class=c30>'&quot;cat&quot;'</span><span class=c0>)</span>
+    <font color="#804040"><b>elseif</b></font><span class=c0> </span><font color="#008080">has</font>(<font color="#ff00ff">'win32'</font><span class=c0>) </span><span class=c33>||</span><span class=c0> </span><span class=c32>has</span><span class=c91>(</span><span class=c30>'win95'</span><span class=c0>) </span><span class=c33>||</span><span class=c0> </span><span class=c32>has</span><span class=c91>(</span><span class=c30>'win16'</span><span class=c0>) </span><span class=c33>||</span><span class=c0> </span><span class=c32>has</span><span class=c91>(</span><span class=c30>'dos32'</span><span class=c0>) </span><span class=c33>||</span><span class=c0> </span><span class=c32>has</span><span class=c91>(</span><span class=c30>'dos16'</span><span class=c0>)</span>
+        <font color="#804040"><b>call</b></font><span class=c0> </span>s:TagsBaseSet<span class=c0>(</span><font color="#ff00ff">'g:CatProg'</font><span class=c0>,</span><span class=c30>'&quot;type&quot;'</span><span class=c0>)</span>
+    <font color="#804040"><b>else</b></font>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>g:<span class=c0> </span>CatProg<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">inputdialog</font>(<font color="#ff00ff">&quot;Please enter location of cat program:&quot;</font><span class=c0>)</span>
+    <font color="#804040"><b>endif</b></font>
+<font color="#804040"><b>endif</b></font>
+
+<font color="#0000ff">&quot; ------------------------------------------------------------------------</font>
+<font color="#0000ff">&quot;</font> <font color="#a020f0">SCRIPT SCOPE FUNCTIONS:</font><span class=c29> functions with a local script scope</span>
+
+
+<font color="#0000ff">&quot; This function is called everytime a filetype is set.  All it does is</font>
+<font color="#0000ff">&quot; check the filetype setting, and if it is one of the filetypes recognized</font>
+<font color="#0000ff">&quot; by ctags, then the TagsBase_createMenu() function is called.  However, the</font>
+<font color="#0000ff">&quot; g:TagsBase_useAutoCommand == FALSE can veto the auto execution.</font>
+<font color="#804040"><b>function</b></font>! <font color="#6a5acd">s:</font><span class=c100>TagsBase_checkFileType</span>()
+    <font color="#804040"><b>if</b></font><span class=c0> !</span>g:TagsBase_useAutoCommand
+        <font color="#804040"><b>return</b></font>
+    <font color="#804040"><b>endif</b></font>
+    <font color="#804040"><b>call</b></font><span class=c0> </span>s:DebugVariable<span class=c0>( </span><font color="#ff00ff">&quot;filetype&quot;</font><span class=c0>, &amp;</span>ft<span class=c0> )</span>
+<font color="#0000ff">    &quot; sorry about the bad form of this if statement, but apparently, the</font>
+<font color="#0000ff">    &quot; expression needs to be terminated by an EOL. (I could use if/elseif...)</font>
+    <font color="#804040"><b>if</b></font>  (<span class=c0>&amp;</span>ft<span class=c0> </span><span class=c33>==</span><span class=c0> </span><font color="#ff00ff">&quot;asm&quot;</font><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;awk&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;c&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;cpp&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;sh&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;cobol&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;eiffel&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;fortran&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;java&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;lisp&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;make&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;pascal&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;perl&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;php&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;python&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;rexx&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;ruby&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;scheme&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;tcl&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;vim&quot;</span><span class=c0>) </span><span class=c33>||</span><span class=c0> (&amp;</span><span class=c89>ft</span><span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;cxx&quot;</span><span class=c0>)</span>
+        <font color="#804040"><b>call</b></font><span class=c0> </span>s:TagsBase_createMenu<span class=c0>()</span>
+    <font color="#804040"><b>endif</b></font>
+<font color="#804040"><b>endfunction</b></font>
+
+
+
+<font color="#0000ff">&quot; Creates the tag file associated with a buffer and return its name</font>
+<font color="#804040"><b>function</b></font>! <font color="#6a5acd">s:</font><span class=c100>CreateFile</span>()
+<font color="#0000ff">    &quot;build file name&quot;</font>
+    <font color="#804040"><b>if</b></font><span class=c0> !</span><font color="#008080">exists</font>(<font color="#ff00ff">&quot;b:fileName&quot;</font><span class=c0>) </span><span class=c33>||</span><span class=c0> </span>b:fileName<span class=c0> </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;&quot;</span>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>dir<span class=c33>=</span><span class=c0> </span><font color="#008080">fnamemodify</font>(<span class=c32>bufname</span><span class=c91>(</span><font color="#ff00ff">&quot;%&quot;</font><span class=c0>),</span><span class=c30>&quot;:p:h&quot;</span><span class=c0>)</span>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>name<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">fnamemodify</font>(<span class=c32>bufname</span><span class=c91>(</span><font color="#ff00ff">&quot;%&quot;</font><span class=c0>), </span><span class=c30>&quot;:t&quot;</span><span class=c0>)</span>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>b:fileName<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c89>dir</span><span class=c0> </span><span class=c33>.</span><span class=c0> </span><font color="#ff00ff">&quot;/&quot;</font><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c30>&quot;.&quot;</span><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c89>name</span><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c30>&quot;.tags&quot;</span>
+        <font color="#804040"><b>if</b></font><span class=c0> !</span><font color="#008080">filewritable</font>(b:fileName<span class=c0>) </span><span class=c33>&amp;&amp;</span><span class=c0> !</span><span class=c32>filewritable</span><span class=c91>(</span>dir<span class=c0>)</span>
+            <font color="#804040"><b>let</b></font><span class=c0> </span>b:fileName<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c90>s:tempDir</span><span class=c0> </span><span class=c33>.</span><span class=c0> </span><font color="#ff00ff">&quot;/.&quot;</font><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c89>name</span><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c30>&quot;.tags&quot;</span>
+        <font color="#804040"><b>endif</b></font>
+    <font color="#804040"><b>endif</b></font>
+<font color="#0000ff">    &quot; execute the ctags command on the current file</font>
+    <font color="#804040"><b>if</b></font><span class=c0> !</span><font color="#008080">filereadable</font>(b:fileName<span class=c0>) </span><span class=c33>||</span><span class=c0> </span><span class=c32>getftime</span><span class=c91>(</span><span class=c90>b:fileName</span><span class=c0>) </span><span class=c33>&lt;</span><span class=c0> </span><span class=c32>getftime</span><span class=c91>(</span><span class=c0>@%) </span><span class=c33>||</span><span class=c0> </span><span class=c90>g:TagsBase_debug</span>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>lCommand<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c90>g:TagsBase_ctagsCommand</span><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c90>b:fileName</span><span class=c0> </span><span class=c33>.</span><span class=c0> </span><font color="#ff00ff">&quot; &quot;</font><span class=c0> </span><span class=c33>.</span><span class=c0> </span><font color="#008080">expand</font>(<span class=c30>&quot;%&quot;</span><span class=c0>)</span>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>lCommand<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">substitute</font>(lCommand<span class=c0>, </span><font color="#ff00ff">'[/</font><span class=c30>\\</span><span class=c30>]'</span><span class=c0>, </span><span class=c90>s:slash</span><span class=c0>, </span><span class=c30>'g'</span><span class=c0>)</span>
+        <font color="#804040"><b>call</b></font><span class=c0> </span>s:DebugVariable<span class=c0>( </span><font color="#ff00ff">&quot;lCommand&quot;</font><span class=c0>, </span>lCommand<span class=c0> )</span>
+        <font color="#804040"><b>call</b></font><span class=c0> </span><font color="#008080">system</font>(<span class=c0> </span>lCommand<span class=c0> )</span>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>fileName<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c90>b:fileName</span><span class=c0>   </span><font color="#0000ff">&quot;local variable because we'll switch buffer</font>
+
+        <font color="#804040"><b>silent</b></font><span class=c0> </span><span class=c33>execute</span> <font color="#ff00ff">&quot;badd &quot;</font><span class=c163> </span><span class=c33>.</span><span class=c163> </span>fileName
+        <font color="#804040"><b>silent</b></font><span class=c0> </span><span class=c33>execute</span> <font color="#ff00ff">&quot;sbuffer &quot;</font><span class=c163> </span><span class=c33>.</span><span class=c163> </span>fileName
+        <font color="#804040"><b>silent</b></font><span class=c0> </span><span class=c33>g</span><span class=c0>/^!/</span><span class=c33>d</span>
+        <font color="#804040"><b>silent</b></font><span class=c0> </span><span class=c33>w</span>
+        <font color="#804040"><b>silent</b></font><span class=c0> </span><span class=c33>execute</span> <font color="#ff00ff">&quot;bwipe! &quot;</font><span class=c163> </span><span class=c33>.</span><span class=c163> </span>fileName
+    <font color="#804040"><b>endif</b></font>
+<font color="#0000ff">    &quot; create and switch to a new, temporary buffer.</font>
+    <font color="#804040"><b>return</b></font><span class=c0> </span>b:fileName
+<font color="#804040"><b>endfunction</b></font>
+
+
+
+<font color="#0000ff">&quot; This is the function that actually calls ctags, parses the output, and</font>
+<font color="#0000ff">&quot; creates the menus.</font>
+<font color="#804040"><b>function</b></font>! <font color="#6a5acd">s:</font><span class=c100>TagsBase_createMenu</span>()
+
+    <font color="#804040"><b>call</b></font><span class=c0> </span>s:InitializeMenu<span class=c0>()</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>fileName<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c90>s:CreateFile</span><span class=c0>()</span>
+
+<font color="#0000ff">    &quot;read the file in a variable</font>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>command<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c90>g:CatProg</span><span class=c33>.</span><font color="#ff00ff">' '</font><span class=c33>.</span><span class=c90>b:fileName</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>command<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">substitute</font>(<span class=c33>command</span>, <font color="#ff00ff">'[/</font><span class=c30>\\</span><span class=c30>]'</span><span class=c83>, </span>s<span class=c83>:</span><span class=c89>slash</span><span class=c83>, </span><span class=c30>'g'</span><span class=c83>)</span>
+
+    <font color="#804040"><b>call</b></font><span class=c0> </span>s:DebugVariable<span class=c0>(</span><font color="#ff00ff">&quot;command&quot;</font><span class=c0>, </span><span class=c33>command</span>)
+    <font color="#804040"><b>let</b></font><span class=c0> </span>ctags<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">system</font>(<span class=c33>command</span>)
+
+<font color="#0000ff">    &quot; loop over the entire file, parsing each line.  Apparently, this can be</font>
+<font color="#0000ff">    &quot; done with a single command, but I can't remember it.</font>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>whilecount<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">1</font>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>b:lines<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">''</font>
+    <font color="#804040"><b>while</b></font><span class=c0> </span><font color="#008080">strlen</font>(ctags<span class=c0>) </span><span class=c33>&gt;</span><span class=c0> </span><font color="#ff00ff">0</font>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>current<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">strpart</font>(ctags<span class=c0>, </span><font color="#ff00ff">0</font><span class=c0>, </span><span class=c32>stridx</span><span class=c91>(</span><span class=c89>ctags</span><span class=c0>, </span><span class=c30>&quot;\n&quot;</span><span class=c0>))</span>
+        <font color="#804040"><b>call</b></font><span class=c0> </span>s:ParseTag<span class=c0>(</span>current<span class=c0>)</span>
+        <font color="#804040"><b>call</b></font><span class=c0> </span>s:MakeMenuEntry<span class=c0>()</span>
+
+        <font color="#804040"><b>call</b></font><span class=c0> </span>s:MakeTagBaseEntry<span class=c0>()</span>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>whilecount<span class=c0> </span><span class=c33>=</span><span class=c0> </span>whilecount<span class=c0> </span><span class=c33>+</span><span class=c0> </span><font color="#ff00ff">1</font>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>ctags<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">strpart</font>(ctags<span class=c0>, </span><span class=c32>stridx</span><span class=c91>(</span><span class=c89>ctags</span><span class=c0>, </span><font color="#ff00ff">&quot;\n&quot;</font><span class=c0>)</span><span class=c33>+</span><span class=c30>1</span><span class=c0>)</span>
+    <font color="#804040"><b>endwhile</b></font>
+
+    <font color="#804040"><b>let</b></font><span class=c0> </span>b:lines<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c90>b:lines</span><span class=c33>.</span><font color="#ff00ff">&quot;9999999&quot;</font>
+<font color="#804040"><b>endfunction</b></font>
+
+
+
+<font color="#0000ff">&quot; Initializes the menu by erasing the old one, creating a new one, and</font>
+<font color="#0000ff">&quot; starting it off with a</font><font color="#ff00ff"> &quot;Rebuild&quot;</font><span class=c29> command</span>
+<font color="#804040"><b>function</b></font>! <font color="#6a5acd">s:</font><span class=c100>InitializeMenu</span>()
+<font color="#0000ff">    &quot; first, lets remove the old menu</font>
+    <font color="#804040"><b>execute</b></font> <font color="#ff00ff">&quot;amenu &quot;</font><span class=c163> </span><span class=c33>.</span><span class=c163> </span>s<span class=c163>:</span><span class=c90>menu_name</span><span class=c163> </span><span class=c33>.</span><span class=c163> </span><span class=c30>&quot;.subname :echo</span><span class=c30>\\</span><span class=c30> foo&quot;</span>
+    <font color="#804040"><b>execute</b></font> <font color="#ff00ff">&quot;aunmenu &quot;</font><span class=c163> </span><span class=c33>.</span><span class=c163> </span>s<span class=c163>:</span><span class=c90>menu_name</span>
+
+<font color="#0000ff">    &quot; and now, add the top of the new menu</font>
+    <font color="#804040"><b>execute</b></font> <font color="#ff00ff">&quot;amenu &quot;</font><span class=c163> </span><span class=c33>.</span><span class=c163> </span>s<span class=c163>:</span><span class=c90>menu_name</span><span class=c163> </span><span class=c33>.</span><span class=c163> </span><span class=c30>&quot;.&amp;Rebuild</span><span class=c30>\\</span><span class=c30> Tags</span><span class=c30>\\</span><span class=c30> Menu :call &lt;SID&gt;TagsBase_createMenu()&lt;CR&gt;&lt;CR&gt;&quot;</span>
+    <font color="#804040"><b>execute</b></font> <font color="#ff00ff">&quot;amenu &quot;</font><span class=c163> </span><span class=c33>.</span><span class=c163> </span>s<span class=c163>:</span><span class=c90>menu_name</span><span class=c163> </span><span class=c33>.</span><span class=c163> </span><span class=c30>&quot;.&amp;Toggle</span><span class=c30>\\</span><span class=c30> Title</span><span class=c30>\\</span><span class=c30> Autocommand :call &lt;SID&gt;TBTitle()&lt;CR&gt;&lt;CR&gt;&quot;</span>
+    <font color="#804040"><b>execute</b></font> <font color="#ff00ff">&quot;amenu &quot;</font><span class=c163> </span><span class=c33>.</span><span class=c163> </span>s<span class=c163>:</span><span class=c90>menu_name</span><span class=c163> </span><span class=c33>.</span><span class=c163> </span><span class=c30>&quot;.-SEP- :&quot;</span>
+<font color="#804040"><b>endfunction</b></font>
+
+<font color="#0000ff">&quot;this function parses a tag entry and set the appropriate script variable</font>
+<font color="#0000ff">&quot;s:name       name of the tag</font>
+<font color="#0000ff">&quot;s:type       type of the tag</font>
+<font color="#0000ff">&quot;s:expression expression used to find the tag</font>
+<font color="#0000ff">&quot;s:line       line where the tag is defined</font>
+<font color="#804040"><b>function</b></font>! <font color="#6a5acd">s:</font><span class=c100>ParseTag</span>(line<span class=c0>)</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>s:name<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">&quot;&quot;</font>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>s:type<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">&quot;&quot;</font>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>s:expression<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">&quot;&quot;</font>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>s:line<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">&quot;&quot;</font>
+    <font color="#804040"><b>if</b></font><span class=c0> </span>a:line<span class=c0>[</span><font color="#ff00ff">0</font><span class=c0>] </span><span class=c33>==</span><span class=c0> </span><span class=c30>&quot;!&quot;</span>
+        <font color="#804040"><b>return</b></font>
+    <font color="#804040"><b>endif</b></font>
+
+    <font color="#804040"><b>let</b></font><span class=c0> </span>s:name<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">substitute</font>(<span class=c90>a:line</span><span class=c0>, </span><span class=c90>g:TagsBase_pattern</span><span class=c0>, </span><span class=c90>g:TagsBase_namePar</span><span class=c0> , </span><font color="#ff00ff">''</font><span class=c0>)</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>s:expression<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">substitute</font>(<span class=c90>a:line</span><span class=c0>, </span><span class=c90>g:TagsBase_pattern</span><span class=c0>, </span><span class=c90>g:TagsBase_exprPar</span><span class=c0>, </span><font color="#ff00ff">''</font><span class=c0>)</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>s:type<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">substitute</font>(<span class=c90>a:line</span><span class=c0>, </span><span class=c90>g:TagsBase_pattern</span><span class=c0>, </span><span class=c90>g:TagsBase_typePar</span><span class=c0>, </span><font color="#ff00ff">''</font><span class=c0>)</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>s:line<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">substitute</font>(<span class=c90>a:line</span><span class=c0>, </span><span class=c90>g:TagsBase_pattern</span><span class=c0>, </span><span class=c90>g:TagsBase_linePar</span><span class=c0>, </span><font color="#ff00ff">''</font><span class=c0>)</span>
+
+    <font color="#804040"><b>if</b></font><span class=c0> </span><font color="#008080">match</font>(<span class=c0> </span>s:expression<span class=c0>, </span><font color="#ff00ff">&quot;[0-9]&quot;</font><span class=c0> ) </span><span class=c33>==</span><span class=c0> </span><span class=c30>0</span>
+<font color="#0000ff">        &quot; this expression is a line number not a pattern so prepend line number </font>
+<font color="#0000ff">        &quot; with : to make it an absolute line command not a relative one</font>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>s:expression<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">&quot;:&quot;</font><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c90>s:expression</span>
+    <font color="#804040"><b>else</b></font>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>s:expression<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">&quot;:0&quot;</font><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c90>s:expression</span>
+    <font color="#804040"><b>endif</b></font>
+<font color="#804040"><b>endfunction</b></font>
+
+<font color="#0000ff">&quot; This function takes a string (assumidly a line from a tag file format) and</font>
+<font color="#0000ff">&quot; parses out the pertinent information, and makes a tag entry in the tag</font>
+<font color="#0000ff">&quot; menu.</font>
+<font color="#804040"><b>function</b></font>! <font color="#6a5acd">s:</font><span class=c100>MakeMenuEntry</span>()
+<font color="#0000ff">    &quot;copy other the name since we may need to change it</font>
+<font color="#0000ff">    &quot;if the tag is overloaded</font>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>name<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c90>s:name</span>
+<font color="#0000ff">    &quot; is this an overloaded tag?</font>
+    <font color="#804040"><b>if</b></font><span class=c0> </span>name<span class=c0> </span><span class=c33>==</span><span class=c0> </span>s:previousTag
+<font color="#0000ff">        &quot; it is overloaded ... augment the name</font>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>s:repeatedTagCount<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c90>s:repeatedTagCount</span><span class=c0> </span><span class=c33>+</span><span class=c0> </span><font color="#ff00ff">1</font>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>name<span class=c0> </span><span class=c33>=</span><span class=c0> </span>name<span class=c0> </span><span class=c33>.</span><span class=c0> </span><font color="#ff00ff">&quot;</font><span class=c30>\\</span><span class=c30> (&quot;</span><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c90>s:repeatedTagCount</span><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c30>&quot;)&quot;</span>
+    <font color="#804040"><b>else</b></font>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>s:repeatedTagCount<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">0</font>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>s:previousTag<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c89>name</span>
+    <font color="#804040"><b>endif</b></font>
+
+<font color="#0000ff">    &quot; build the menu command</font>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>menu<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">&quot;amenu &quot;</font><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c90>s:menu_name</span><span class=c0> </span>
+    <font color="#804040"><b>if</b></font><span class=c0> </span>g:TagsBase_groupByType
+        <font color="#804040"><b>let</b></font><span class=c0> </span>menu<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c33>menu</span><span class=c0> </span><font color="#a020f0">.</font><span class=c0> </span><font color="#6a5acd">&quot;.</font><span class=c0>&amp;&quot; </span><span class=c33>.</span><span class=c0> </span><span class=c90>s:type</span>
+    <font color="#804040"><b>endif</b></font>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>menu<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c33>menu</span><span class=c0> </span><font color="#a020f0">.</font><span class=c0> </span><font color="#6a5acd">&quot;.</font><span class=c0>&amp;&quot; </span><span class=c33>.</span><span class=c0> </span>name
+    <font color="#804040"><b>if</b></font><span class=c0> !</span>g:TagsBase_groupByType
+        <font color="#804040"><b>let</b></font><span class=c0> </span>menu<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c33>menu</span><span class=c0> </span><font color="#a020f0">.</font><span class=c0> </span><font color="#ff00ff">&quot;&lt;tab&gt;&quot;</font><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c90>s:type</span>
+    <font color="#804040"><b>endif</b></font>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>menu<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c33>menu</span><span class=c0> </span><font color="#a020f0">.</font><span class=c0> </span><font color="#ff00ff">&quot; &quot;</font><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c30>&quot;:call &lt;SID&gt;GoToTag('&quot;</span><span class=c33>.</span><span class=c0> </span>name<span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c30>&quot;')&lt;CR&gt;&quot;</span><span class=c0> </span>
+    <font color="#804040"><b>call</b></font><span class=c0> </span>s:DebugVariable<span class=c0>( </span><font color="#ff00ff">&quot;Menu command &quot;</font><span class=c0>, </span><span class=c33>menu</span><span class=c0> </span><font color="#a020f0">)</font>
+<font color="#0000ff">    &quot; escape some pesky characters</font>
+<font color="#0000ff">    &quot; this is probably not usefull anymore since I doubt there are any</font>
+<font color="#0000ff">    &quot; characters to escape in a tagname</font>
+    <font color="#804040"><b>execute</b></font> escape<span class=c163>( </span><span class=c90>menu</span><span class=c163>, </span><span class=c90>g</span><span class=c163>:</span><span class=c90>TagsBase_escapeChars</span><span class=c163> )</span>
+<font color="#804040"><b>endfunction</b></font>
+
+<font color="#0000ff">&quot; Prints debugging information in the fprintf format of</font><font color="#ff00ff"> &quot;%s = %s&quot;</font><span class=c29>, name, value</span>
+<font color="#804040"><b>function</b></font>! <font color="#6a5acd">s:</font><span class=c100>DebugVariable</span>(name<span class=c0>, </span><span class=c89>value</span><span class=c0>)</span>
+    <font color="#804040"><b>if</b></font><span class=c0> </span>g:TagsBase_debug
+        <font color="#804040"><b>echo</b></font> a:name <span class=c33>.</span><span class=c162> </span><font color="#ff00ff">&quot; = &quot;</font><span class=c162> </span><span class=c33>.</span><span class=c162> a:value</span>
+    <font color="#804040"><b>endif</b></font>
+<font color="#804040"><b>endfunction</b></font>
+
+<font color="#0000ff">&quot; This function builds an array of tag names.  b:lines contains line numbers;</font>
+<font color="#0000ff">&quot; b:l&lt;number&gt; is the tag value for the line &lt;number&gt;.</font>
+<font color="#804040"><b>function</b></font>! <font color="#6a5acd">s:</font><span class=c100>MakeTagBaseEntry</span>()
+    <font color="#804040"><b>let</b></font><span class=c0> </span>command<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">&quot;let b:l&quot;</font><span class=c33>.</span><span class=c90>s:line</span><span class=c33>.</span><span class=c0> </span><span class=c30>&quot; = '&quot;</span><span class=c33>.</span><span class=c90>s:name</span><span class=c33>.</span><span class=c30>&quot;'&quot;</span>
+    <font color="#804040"><b>execute</b></font> command
+    <font color="#804040"><b>let</b></font><span class=c0> </span>index<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c90>s:BinarySearch</span><span class=c0>(</span><span class=c90>s:line</span><span class=c0>)</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>firstpart<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">strpart</font>(<span class=c90>b:lines</span><span class=c0>, </span><font color="#ff00ff">0</font><span class=c0>, </span><span class=c90>s:length</span><span class=c0>*</span>index<span class=c0>)</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>middlepart<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">strpart</font>(<span class=c90>s:line</span><span class=c33>.</span><span class=c90>s:spaces</span><span class=c0>, </span><font color="#ff00ff">0</font><span class=c0>, </span><span class=c90>s:length</span><span class=c0>)</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>lastpart<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">strpart</font>(<span class=c90>b:lines</span><span class=c0>, </span><span class=c90>s:length</span><span class=c0>*</span>index<span class=c0>, </span><span class=c32>strlen</span><span class=c91>(</span><span class=c90>b:lines</span><span class=c0>))</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>b:lines<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c89>firstpart</span><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c89>middlepart</span><span class=c0> </span><span class=c33>.</span><span class=c0> </span><span class=c89>lastpart</span>
+<font color="#804040"><b>endfunction</b></font>
+
+<font color="#0000ff">&quot; This function returns the tag line for given index in the b:lines array.</font>
+<font color="#804040"><b>function</b></font>! <font color="#6a5acd">s:</font><span class=c100>GetLine</span>(i<span class=c0>)</span>
+    <font color="#804040"><b>return</b></font><span class=c0> </span><font color="#008080">strpart</font>(b:lines<span class=c0>, </span><span class=c90>a:i</span><span class=c0>*</span><span class=c90>s:length</span><span class=c0>, </span><span class=c90>s:length</span><span class=c0>)</span><span class=c33>+</span><font color="#ff00ff">0</font>
+<font color="#804040"><b>endfunction</b></font>
+
+<font color="#0000ff">&quot; This function does binary search in the array of tag names and returns</font>
+<font color="#0000ff">&quot; the index of the corresponding line or the one immediately inferior.</font>
+<font color="#0000ff">&quot; it is used to retrieve the tag name corresponding to a given line (cf</font>
+<font color="#0000ff">&quot; s:GetTagName)</font>
+<font color="#0000ff">&quot; and to keep the b:lines array sorted as it is being built</font>
+<font color="#804040"><b>function</b></font>! <font color="#6a5acd">s:</font><span class=c100>BinarySearch</span>(curline<span class=c0>)</span>
+    <font color="#804040"><b>if</b></font><span class=c0> !</span><font color="#008080">exists</font>(<font color="#ff00ff">&quot;b:lines&quot;</font><span class=c0>) </span><span class=c33>||</span><span class=c0> </span><span class=c32>match</span><span class=c91>(</span>b:lines<span class=c0>, </span><span class=c30>&quot;^\s*9999999&quot;</span><span class=c0>) </span><span class=c33>!=</span><span class=c0> </span><span class=c30>-1</span>
+        <font color="#804040"><b>return</b></font><span class=c0> </span><font color="#ff00ff">-1</font>
+    <font color="#804040"><b>endif</b></font>
+
+    <font color="#804040"><b>if</b></font><span class=c0> </span>b:lines<span class=c0> </span><span class=c33>==</span><span class=c0> </span><font color="#ff00ff">&quot;&quot;</font>
+        <font color="#804040"><b>return</b></font><span class=c0> </span><font color="#ff00ff">0</font>
+    <font color="#804040"><b>endif</b></font>
+
+    <font color="#804040"><b>let</b></font><span class=c0> </span>left<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#ff00ff">0</font>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>right<span class=c0> </span><span class=c33>=</span><span class=c0> </span><font color="#008080">strlen</font>(<span class=c90>b:lines</span><span class=c0>)/</span><span class=c90>s:length</span>
+
+    <font color="#804040"><b>if</b></font><span class=c0> </span>a:curline<span class=c0> </span><span class=c33>&lt;</span><span class=c0> </span><span class=c90>s:GetLine</span><span class=c0>(</span><span class=c33>left</span><span class=c0>)</span>
+        <font color="#804040"><b>return</b></font><span class=c0> </span><font color="#ff00ff">&quot;&quot;</font>
+    <font color="#804040"><b>endif</b></font>
+
+    <font color="#804040"><b>while</b></font><span class=c0> </span><span class=c33>left</span><span class=c33>&lt;</span><span class=c33>right</span>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>middle<span class=c0> </span><span class=c33>=</span><span class=c0> (</span><span class=c33>right</span><span class=c33>+</span><span class=c33>left</span><span class=c33>+</span><font color="#ff00ff">1</font><span class=c0>)/</span><span class=c30>2</span>
+        <font color="#804040"><b>let</b></font><span class=c0> </span>middleline<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c90>s:GetLine</span><span class=c0>(</span>middle<span class=c0>)</span>
+
+        <font color="#804040"><b>if</b></font><span class=c0> </span>middleline<span class=c0> </span><span class=c33>==</span><span class=c0> </span>a:curline
+            <font color="#804040"><b>let</b></font><span class=c0> </span>left<span class=c0> </span><span class=c33>=</span><span class=c0> </span>middle
+            <font color="#804040"><b>break</b></font>
+        <font color="#804040"><b>endif</b></font>
+
+        <font color="#804040"><b>if</b></font><span class=c0> </span>middleline<span class=c0> </span><span class=c33>&gt;</span><span class=c0> </span>a:curline
+            <font color="#804040"><b>let</b></font><span class=c0> </span>right<span class=c0> </span><span class=c33>=</span><span class=c0> </span>middle<font color="#ff00ff">-1</font>
+        <font color="#804040"><b>else</b></font>
+            <font color="#804040"><b>let</b></font><span class=c0> </span>left<span class=c0> </span><span class=c33>=</span><span class=c0> </span>middle
+        <font color="#804040"><b>endif</b></font>
+    <font color="#804040"><b>endwhile</b></font>
+    <font color="#804040"><b>return</b></font><span class=c0> </span><span class=c33>left</span>
+<font color="#804040"><b>endfunction</b></font>
+
+<font color="#0000ff">&quot;retrieves the name of the last tag defined for a given line</font>
+<font color="#804040"><b>function</b></font>! <font color="#6a5acd">s:</font><span class=c100>GetTagName</span>(curline<span class=c0>)</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>index<span class=c0> </span><span class=c33>=</span><span class=c0> </span><span class=c90>s:BinarySearch</span><span class=c0>(</span><span class=c90>a:curline</span><span class=c0>)</span>
+    <font color="#804040"><b>if</b></font><span class=c0> </span>index<span class=c0> </span><span class=c33>==</span><span class=c0> </span><font color="#ff00ff">-1</font><span class=c0> </span>
+        <font color="#804040"><b>return</b></font><span class=c0> </span><font color="#ff00ff">&quot;&quot;</font>
+    <font color="#804040"><b>endif</b></font>
+    <font color="#804040"><b>exe</b></font> <font color="#ff00ff">&quot;let ret=b:l&quot;</font><span class=c33>.</span>s<span class=c163>:</span><span class=c90>GetLine</span><span class=c163>(</span><span class=c90>index</span><span class=c163>)</span>
+    <font color="#804040"><b>return</b></font><span class=c0> </span><span class=c33>ret</span>
+<font color="#804040"><b>endfunction</b></font>
+
+<font color="#0000ff">&quot;uses vim tags facility to jump to a tag and push the tag to the tag stack.</font>
+<font color="#0000ff">&quot;restores the value of tags afterward</font>
+<font color="#804040"><b>function</b></font> <font color="#6a5acd">s:</font><span class=c100>GoToTag</span>(iTag<span class=c0>)</span>
+    <font color="#804040"><b>let</b></font><span class=c0> </span>oldTag<span class=c0> </span><span class=c33>=</span><span class=c0> &amp;</span><span class=c33>tags</span>
+    <font color="#804040"><b>let</b></font><span class=c0> &amp;</span><span class=c33>tags</span><span class=c33>=</span>b:fileName
+    <font color="#804040"><b>execute</b></font> <font color="#ff00ff">&quot;ta &quot;</font><span class=c163> </span><span class=c33>.</span><span class=c163> </span>a<span class=c163>:</span><span class=c90>iTag</span>
+    <font color="#804040"><b>let</b></font><span class=c0> &amp;</span><span class=c33>tags</span><span class=c33>=</span>oldTag
+<font color="#804040"><b>endfunction</b></font>
+
+
+</pre>
+</body>
+</html>

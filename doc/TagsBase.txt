@@ -1,0 +1,75 @@
+*TagsBase.txt*          Plugin for tag related advanced features
+1. Description
+Tags Base is the result of the merge and enhancements of the scripts:
+ *TagsMenu (http://members.home.net/jayglanville/tagsmenu/TagsMenu.html) script
+ *ctags.vim (http://vim.sourceforge.net/scripts/script.php?script_id=12) script
+
+Tags Base automatically uses |ctags| to generate a |tag| file for the currently
+edited file, refreshes it if the file is newer than the tags file and uses it
+to provide a set of advanced feature to vim.
+Right now the feature provided are:
+    *Detection of the currently edited function (or more precisely of the last
+     tag above the current line) and presentation of this function in the
+     title bar.
+    *Creation of a menu of tags in the file this contains things such as method,
+    function, class... the type of tags supported depends on the current
+    language and on the implementation of the |ctags| program
+
+    TagsBase manipulates all tags supported by |ctags|. (For the full list of
+    supported tags and attributes, see "http://ctags.sourceforge.net/"
+
+===============================================================================
+*TagsBase-requirements*
+2. Requirements
+    TagsBase for GVim has only two requirements: gvim 6.x (with standard vim you
+    won't have any menus), and Exuberant Ctags 5.0 or later
+    (http://ctags.sourceforge.net/).
+    Ctags is not distributed with vim anymore but its a great tool for any
+    programmer using vim.
+
+Note 1: if you do not have version 5.0 of ctags, I recommend that you upgrade,
+		it may work (with some fiddling with the |TagsBase-Parsing|
+		options) but it is not tested.
+
+Note 2: the requirement is for Exuberant ctags. This satisfies the requirements
+		of the level two information on line number and tags type.
+		Other ctags program may provide it but you'll need to tweak the
+		parsing regexps see |TagsBase-Parsing|
+
+===============================================================================
+*TagsBase-Options*					*TagsBase-Customization*
+3. Customization
+
+There are several global variables that users can use to change the scripts
+behaviour. In order to set a variable, simply use |:let| in a sourced script
+or in the command line.
++-----------------------+-----------------------+------------------------------+
+|variable:              |default value:         |description:                  |
+|g:TagsBase_groupByType |1 (true)               |group tags in the menu        |
+|g:TagsBase_debug       |0 (false)              |output debug messages         |
+|g:TagsBase_ctagsCommand|'ctags --fields=Kn -o' |used to launch ctags          |
+|g:TagsBase_Pattern     |'^\([^\t]\{-}\)\t[^\t]\{-}\t\(.\{-}\);"\t\([^\t]*\)\tline:\(\d*\).*$'
+|                       |                       |used to parse a tag           |
+|g:TagsBase_namePar     |\1                     |used to parse a tag name      |
+|g:TagsBase_exprPar     |\2                     |used to parse a tag expr      |
+|g:TagsBase_typePar     |\3                     |used to parse a tag type      |
+|g:TagsBase_linePar     |\4                     |used to parse a tag line      |
++-----------------------+-----------------------+------------------------------+
+*TagsBase-Parsing*
+Parsing in TagsBase is done using a regexp and some substitution strings they
+are in global variable so they can be customized, right now the regexp parses a
+tag with the format:
++------------+------------------+------------------------------+-----------------+
+|org.jruby   |   Main.java      |/^package org.jruby;$/;"      | package line:28 |
+|    ^       |       ^          |        ^      |       ^      |     ^        ^  |
+|tagname     |   file (skipped) |expression     |level 2 delim |   type    line  |
++------------+------------------+---------------+--------------+-----------------+
+in this table the vertical lines going through the tag line denote a <tab>.
+the variables:
+g:TagsBase_ctagsCommand
+g:TagsBase_Pattern
+g:TagsBase_namePar
+g:TagsBase_exprPar
+g:TagsBase_typePar
+g:TagsBase_linePar
+are used in conjunction to produce and parse tags of this format.
