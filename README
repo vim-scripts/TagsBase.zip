@@ -1,0 +1,42 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=100
+
+Tags Base started as the merge and enhancements of the scripts:
+ *TagsMenu (http://members.home.net/jayglanville/tagsmenu/TagsMenu.html) script
+ 		    Jay Dickon Glanville  dickon@nortelnetworks.com
+
+ *ctags.vim (http://vim.sourceforge.net/scripts/script.php?script_id=12) script
+ 			Alexey Marinichev   lyosha@lyosha.2y.net
+ see |TagsBase-Credits|
+It now is a complete rewrite of those scripts plus additional functionality in embedded
+perl as well as some of the original vim code which is used to provide the same functionality
+when you are unlucky enough not to have access to the +perl or +perl/dyn feature in
+your vim build.
+
+Tags Base automatically uses |ctags| to generate a |tag| file for the currently
+edited file, refreshes it if the file is newer than the tags file and uses it
+to provide a set of advanced feature to vim.
+
+Beware that this means that some tag files are left behind on your computer,
+	they may end up in the same directory as your files or in a temporary
+	directory depending on the rights of the file directory. You can specify the
+	prefixe and suffix used to compute those temporary files.  There is also
+                some options to cleanup those file, the default being of only cleaning up
+                the temp directory.
+
+Right now the feature provided are:
+    *Detection of the currently edited tag and its type and presentation of this information in the
+     title bar. Most of the time when editing a C/C++/java... file this means you have on the 
+     title bar the name of the current function.     *Creation of a menu of tags in the file this 
+     contains things such as method, function, class... the type of tags supported depends on 
+     the current language and on the implementation of the |ctags| program
+
+    TagsBase manipulates all tags supported by |ctags|. (For the full list of
+    supported tags and attributes, see "http://ctags.sourceforge.net/&quot;
+
+
+Additional description can be found in the included help file. This script requires a version 5.0 of ctags.
+
+This script has also been used by me as a test bed for embedding perl in vim scripts specifically for
+performance reasons since parsing a large set of tags can take a fair amount of time.
+For this reason you'll find a couple fo files (TagsBase.pl and VIM.pm) which I use in the development
+process, to find out about this see vimtip #140
