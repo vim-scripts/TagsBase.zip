@@ -522,7 +522,7 @@ function! s:BinarySearch(curline)
 endfunction
 
 function! s:GetTagLine(curline)
-	let index = s:BinarySearch(line)
+    let index = s:BinarySearch(a:curline)
 	if index == -1
 		return -1
 	endif
@@ -623,9 +623,19 @@ endfunction
 
 function! TagsBaseBufGotoTag()
 	"get the line number
-	let ln = matchstr(getline('.'), '^\d\+')
+    let curline = line('.')
+	let tagname = matchstr(getline(curline), '\%(^\d\+\s\+\S\+\)\@<=\s*')
+    "find the tag index
+    let index = 0
+    let curline = curline -1
+    let curtag = matchstr(getline(curline), '\%(^\d\+\s\+\S\+\)\@<=\s*')
+    while tagname == curtag
+        let index = index + 1
+        let curline = curline -1
+        let curtag = matchstr(getline(curline), '\%(^\d\+\s\+\S\+\)\@<=\s*')
+    endwhile
 	let bufnr = b:bufnr
 	quit
 	exe 'b ' . bufnr
-	exe ln
+	call TagsBase_GoToTag(tagname, index)
 endfunction

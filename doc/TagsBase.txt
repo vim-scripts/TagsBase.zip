@@ -1,4 +1,7 @@
+
 *TagsBase.txt*          Plugin for tag related advanced features
+
+
 1. Description
 Tags Base is the result of the merge and enhancements of the scripts:
  *TagsMenu (http://members.home.net/jayglanville/tagsmenu/TagsMenu.html) script
@@ -28,6 +31,19 @@ Right now the feature provided are:
 
     TagsBase manipulates all tags supported by |ctags|. (For the full list of
     supported tags and attributes, see "http://ctags.sourceforge.net/"
+
+1.      Requirements                            |TagsBase-requirements|
+2.      Customization                           |TagsBase-Options| |TagsBase-Customization|
+3.      Parsing                                 |TagsBase-Parsing|
+4.      Functions                               |TagsBase-Functions|
+        4.1. TagsBase_GetTagName({line})        |TagsBase_GetTagName()|
+        4.2. TagsBase_GetTagType({line})        |TagsBase_GetTagType()|
+        4.3. TagsBase_GoToTag({TagName}, {index}) |TagsBase_GoToTag()|
+5.      Special Buffer                          |TagsBase-Buffer| |TagsBase-Window| |:TagsWindow|
+6.      Known bugs                              |TagsBase-Bugs|
+7.      ChangeLog                               |TagsBase-ChangeLog|
+8.      Todo                                    |TagsBase-Todo|
+9.      Credits                                 |TagsBase-Credits|
 
 ===============================================================================
 *TagsBase-requirements*
@@ -114,28 +130,76 @@ than the title bar (in the status bar for example or in a dialog when you hit
 a certain key)
 
 
+TagsBase_GetTagType({line})                         *TagsBase_GetTagType()*
+the result is the type of the last tag define above {line}.
+{line} is either a line number (which must be matched by the '\d\+' regexp,
+        i.e.: a decimal number) or a parameter for the |line()| function.
+
+This function is to be used if you want to display the tag type someplace else
+than the title bar (in the status bar for example or in a dialog when you hit
+a certain key)
+
+TagsBase_GoToTag({TagName}, {index})                *TagsBase_GoToTag()*
+uses vim tags facility to jump to a tag and push the tag to the tag stack.
+Jumps to a tag in the tagsbase, TagName is the name of the tag index is the
+number of repeat search to do (if you want the first tag with this name use 0)
+
+
+
+
+===============================================================================
+*TagsBase-Buffer* *TagsBase-Window* *:TagsWindow*
+By using the TagsWindow command one can open a buffer with the list of all
+tags in the current buffer.
+This buffer can then be used to jump to any of those tag by doubleclicking or by
+hitting enter on the appropriate line .
++--------------+-----------+
+| <cr>         | Goto Tag  |
++--------------+-----------+
+|<2-LeftMouse> | Goto Tag  |
++--------------+-----------+
+===============================================================================
+*TagsBase-Bugs*
+1)  unable to write tag file if the security does not allow it.
+        VIM cannot detect the ACL on an NTFS file system, this
+        creates cases when TagsBase thinks it can create a tagsfile
+        but it cannot.  No workaround yet
+2)  several files with the same name in different directories which
+        are all readonly, the tags from the first file will be used.
+        Workaround: rebuild your tags base when in this configuration
+
+
+
 *TagsBase-ChangeLog*
-[25-Oct-2001] 0.8.3 (vim 6.0) "enhanced cascading menus for win32. Do not 
+[11-Nov-2001] 0.9   (vim 6.0) "added the TagsWindow command to visualize tags
+                               in a buffer.
+                               added a menu entry to opent the Tags Buffer.
+                               added a toc to the help.
+                               corrected the NT ACL bug.
+                               "
+              0.8.4 (vim 6.0) "correct order of submenus.  Correct opening
+                                of submenu on several levels."
+[25-Oct-2001] 0.8.3 (vim 6.0) "enhanced cascading menus for win32. Do not
                                 use the popup anymore but really opens the
                                 menu"
-[21-Oct-2001] 0.8.2 (vim 6.0) "bugfix removed some stray timing statements 
-                                from the perl scripts" 
-[20-Oct-2001] 0.8.1 (vim 6.0) "small correction for bug resulting in error 
-                                        message: 
-                                 Uncaught exception from user code: 
-                                ^ICan't call method "Type" on unblessed 
-                                        reference at perl/TagsBase.vim line 376. 
-                                ^ITagsBase::GetTagType(391) called at 
-                                        (eval 14) line 1 
-                                ^Ieval 'TagsBase::GetTagType 391 
-                                ;' called at (eval 14) line 0 
-                                Uncaught exception from user code: 
-                                ^ICan't call method "Name" on unblessed 
-                                        reference at perl/TagsBase.vim line 389. 
-                                ^ITagsBase::GetTagName(391) called at 
-                                        (eval 15) line 1 
-                                ^Ieval 'TagsBase::GetTagName 391 
-                                " 
+[21-Oct-2001] 0.8.2 (vim 6.0) "bugfix removed some stray timing statements
+                                from the perl scripts"
+[20-Oct-2001] 0.8.1 (vim 6.0) "small correction for bug resulting in error
+                                        message:
+                                 Uncaught exception from user code:
+                                ^ICan't call method "Type" on unblessed
+                                        reference at perl/TagsBase.vim line 376.
+                                ^ITagsBase::GetTagType(391) called at
+                                        (eval 14) line 1
+                                ^Ieval 'TagsBase::GetTagType 391
+                                ;' called at (eval 14) line 0
+                                Uncaught exception from user code:
+                                ^ICan't call method "Name" on unblessed
+                                        reference at perl/TagsBase.vim line 389.
+                                ^ITagsBase::GetTagName(391) called at
+                                        (eval 15) line 1
+                                ^Ieval 'TagsBase::GetTagName 391
+                                "
 
 [17-Oct-2001] 0.8  (vim 6.0)  "Greatly improved the speed when perl is
                                 available.  Now almost everything happens in
@@ -163,7 +227,7 @@ a certain key)
                                 this makes the menu work with split windows.
                                 Keeps the menu generating command in a buffer
                                 variable to avoid the extra work of reparsing if
-                                it is not needed.  Uses the perl interpreter if 
+                                it is not needed.  Uses the perl interpreter if
                                 available to speed up the tags parsing"
 [02-Oct-2001] 0.6 (vim 6.0)    "avoids opening a buffer on the tags file,
                                 optionnally destroy the created tags files,
@@ -197,6 +261,13 @@ a certain key)
 
 If you find any other bugs, please report it by mail to me (benoit.cerrina@writeme.com"
 
+*TagsBase-Todo*
+TODO:
+*add a better way to navigate using the tags buffer
+*add cascading menu for win32 no perl
+*add check for non win32 in code to make it still work or
+     at least put out a message and skip the computation
+     when the menu is too big
 
 
 *TagsBase-Credits*
